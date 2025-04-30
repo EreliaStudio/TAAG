@@ -5,8 +5,8 @@ project(${ProjectName})
 find_package(GLEW REQUIRED)
 find_package(Sparkle REQUIRED)
 
-set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/includes)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/srcs)
 
 file(GLOB_RECURSE HEADERS
     ${INCLUDE_DIR}/*.hpp
