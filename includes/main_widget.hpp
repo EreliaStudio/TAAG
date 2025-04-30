@@ -35,12 +35,11 @@ public:
 		_gameHUD(p_name + L"/GameHUD", this),
 		_menuHUD(p_name + L"/MenuHUD", this)
 	{
-
-		_gameHUDContract = EventDispatcher::instance()->subscribe(Event::EnterGameHUD, [&]() {
+		_gameHUDContract = EventDispatcher::instance()->subscribe(Event::OpenGameHUD, [&]() {
 			_gameHUD.activate();
 		});
 
-		_menuHUDContract = EventDispatcher::instance()->subscribe(Event::EnterMenuHUD, [&]() {
+		_menuHUDContract = EventDispatcher::instance()->subscribe(Event::OpenMenuHUD, [&]() {
 			_menuHUD.activate();
 		});
 	}

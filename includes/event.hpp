@@ -3,6 +3,8 @@
 enum class Event
 {
 	CloseApplication,
-	EnterMenuHUD,
-	EnterGameHUD
+	OpenMenuHUD,
+	OpenGameHUD,
+	JoinGame,
+	HostGame
 };

@@ -38,28 +38,6 @@ private:
 		_exitButton.setGeometry(position + spk::Vector2Int(0, lineSize.y + space.y) * 2, lineSize);
 	}
 
-	void _onJoinRequest()
-	{
-		Client::instanciate();
-
-		std::wstring address = _addressTextEdit.text();
-
-		Client::instance()->setup(spk::StringUtils::wstringToString(address));
-		Client::instance()->connect();
-	}
-
-	void _onHostRequest()
-	{
-		Server::instanciate();
-
-		Server::instance()->start();
-
-		Client::instanciate();
-
-		Client::instance()->setup("localhost");
-		Client::instance()->connect();
-	}
-
 public:
 	MenuHUD(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Screen(p_name, p_parent),
@@ -73,13 +51,13 @@ public:
 
 		_joinButton.setText(L"Join");
 		_joinButtonContract = _joinButton.subscribe([&]() {
-			_onJoinRequest();
+			EventDispatcher::instance()->emit(Event::CloseApplication);
 		});
 		_joinButton.activate();
 
 		_hostButton.setText(L"Host game");
 		_hostButtonContract = _hostButton.subscribe([&]() {
-			_onHostRequest();
+			EventDispatcher::instance()->emit(Event::CloseApplication);
 		});
 		_hostButton.activate();
 
