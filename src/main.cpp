@@ -1,85 +1,92 @@
 #include <sparkle.hpp>
 
-class Client
+class Client : public spk::Singleton<Client>
 {
+	friend class spk::Singleton<Client>;
 private:
-	static inline std::string _address;
-	static inline const size_t _port = 26500;
-	static inline spk::Client _client;
+	std::string _address;
+	const size_t _port = 26500;
+	spk::Client _client;
+
+	Client() = default;
 
 public:
 	spk::Client::Contract addOnConnectionCallback(const spk::Client::ConnectionCallback &p_connectionCallback);
 	spk::Client::Contract addOnDisconnectionCallback(const spk::Client::DisconnectionCallback &p_disconnectionCallback);
 
-	static bool isConnected()
+	bool isConnected()
 	{
 		return (_client.isConnected());
 	}
-	static void setup(const std::string &p_address)
+	void setup(const std::string &p_address)
 	{
 		_address = p_address;
 	}
-	static void connect()
+	void connect()
 	{
 		_client.connect(_address, _port);
 	}
-	static void disconnect()
+	void disconnect()
 	{
 		_client.disconnect();
 	}
-	static void send(const spk::Message &p_message)
+	void send(const spk::Message &p_message)
 	{
 		_client.send(p_message);
 	}
-	static spk::ThreadSafeQueue<spk::Client::MessageObject> &messages()
+	spk::ThreadSafeQueue<spk::Client::MessageObject> &messages()
 	{
 		return (_client.messages());
 	}
 };
 
-class Server
+class Server : public spk::Singleton<Server>
 {
+	friend class spk::Singleton<Server>;
+
 private:
-	static inline const size_t _port = 26500;
-	static inline spk::Server _server;
+	const size_t _port = 26500;
+	spk::Server _server;
+
+	Server() = default;
 
 public:
-	static void start()
+	void start()
 	{
 		_server.start(_port);
 	}
 
-	static void stop()
+	void stop()
 	{
 		_server.stop();
 	}
 
-	static spk::Server::Contract addOnConnectionCallback(const spk::Server::ConnectionCallback &p_connectionCallback)
+	spk::Server::Contract addOnConnectionCallback(const spk::Server::ConnectionCallback &p_connectionCallback)
 	{
 		return std::move(_server.addOnConnectionCallback(p_connectionCallback));
 	}
 	
-	static spk::Server::Contract addOnDisconnectionCallback(const spk::Server::DisconnectionCallback &p_disconnectionCallback)
+	spk::Server::Contract addOnDisconnectionCallback(const spk::Server::DisconnectionCallback &p_disconnectionCallback)
 	{
 		return std::move(_server.addOnDisconnectionCallback(p_disconnectionCallback));
 	}
 
-	static void sendTo(spk::Server::ClientID p_clientID, const spk::Message& p_msg)
+	void sendTo(spk::Server::ClientID p_clientID, const spk::Message& p_msg)
 	{
 		_server.sendTo(p_clientID, p_msg);
 	}
 
-	static void sendTo(const std::vector<spk::Server::ClientID> &p_clients, const spk::Message &p_message)
+	void sendTo(const std::vector<spk::Server::ClientID> &p_clients, const spk::Message &p_message)
 	{
 		_server.sendTo(p_clients, p_message);
 	}
 
-	static void sendToAll(const spk::Message& p_msg)
+	void sendToAll(const spk::Message& p_msg)
 	{
 		_server.sendToAll(p_msg);
 	}
 
-	static spk::ThreadSafeQueue<spk::Server::MessageObject> &messages()
+	spk::ThreadSafeQueue<spk::Server::MessageObject> &messages()
 	{
 		return _server.messages();
 	}
@@ -92,45 +99,49 @@ enum class Event
 	EnterGameHUD
 };
 
-class EventDispatcher
+class EventDispatcher : public spk::Singleton<EventDispatcher>
 {
+	friend class spk::Singleton<EventDispatcher>;
 public:
 	using Observer = spk::Observer<Event>;
 	using Contract = Observer::Contract;
 	using Job = Observer::Job;
 
 private:
-	static inline Observer _observer;
+	Observer _observer;
+
+	EventDispatcher() = default;
 
 public:
-	static void emit(Event p_event)
+	void emit(Event p_event)
 	{
 		_observer.notifyEvent(p_event);
 	}
 
-	static void invalidateContracts(Event p_event)
+	void invalidateContracts(Event p_event)
 	{
 		_observer.invalidateContracts(p_event);
 	}
 
-	static Observer::Contract subscribe(Event p_event, const Job &p_job)
+	Observer::Contract subscribe(Event p_event, const Job &p_job)
 	{
 		return (std::move(_observer.subscribe(p_event, p_job)));
 	}
 };
 
-class AssetAtlas
+class AssetAtlas : public spk::Singleton<AssetAtlas>
 {
+	friend class spk::Singleton<AssetAtlas>;
 private:
 	/*
 	{
-		"Image":[
+		"Images":[
 			{
 				"Name":"Image",
 				"Path":"assets/images/image.png"
 			}
 		],
-		"SpriteSheet":[
+		"SpriteSheets":[
 			{
 				"Name":"SpriteSheet",
 				"Path":"assets/spritesheets/spritesheet.png",
@@ -140,7 +151,7 @@ private:
 				}
 			}
 		],
-		"Font":[
+		"Fonts":[
 			{
 				"Name":"Font",
 				"Path":"assets/fonts/font.ttf"
@@ -148,132 +159,164 @@ private:
 		]
 	}
 	 */
-	static inline std::unordered_map<std::wstring, spk::Image> _images;
-	static inline std::unordered_map<std::wstring, spk::SpriteSheet> _spriteSheets;
-	static inline std::unordered_map<std::wstring, spk::Font> _fonts;
+	std::unordered_map<std::wstring, std::unique_ptr<spk::Image>> _images;
+	std::unordered_map<std::wstring, std::unique_ptr<spk::SpriteSheet>> _spriteSheets;
+	std::unordered_map<std::wstring, std::unique_ptr<spk::Font>> _fonts;
+
+	AssetAtlas() = default;
+	AssetAtlas(const spk::JSON::File& p_atlasFileConfiguration)
+	{
+		load(p_atlasFileConfiguration);
+	}
 
 public:
-	static void load(const spk::JSON::File& p_atlasFileConfiguration)
+	void load(const spk::JSON::File& p_atlasFileConfiguration)
 	{
+		if (p_atlasFileConfiguration.contains(L"Images") == true)
 		{
-			const auto& imagesNode = p_atlasFileConfiguration[L"images"];
+			const auto& imagesNode = p_atlasFileConfiguration[L"Images"];
 
-			if (!imagesNode.isArray())
-				GENERATE_ERROR("The \"images\" entry must be a JSON array");
+			if (imagesNode.isArray() == false)
+			{
+				throw std::runtime_error("The \"Images\" entry must be a JSON array");
+			}
 
 			for (const spk::JSON::Object* imagePtr : imagesNode.asArray())
 			{
 				const auto& image = *imagePtr;
 
-				const std::wstring& name = image[L"name"].as<std::wstring>();
-				const std::wstring& path = image[L"path"].as<std::wstring>();
+				const std::wstring& name = image[L"Name"].as<std::wstring>();
+				const std::wstring& path = image[L"Path"].as<std::wstring>();
 
-				_images[name] = spk::Image(path);
+				_images[name] = std::make_unique<spk::Image>(path);
 			}
 		}
 
-		/****************  SPRITE SHEETS  ***************/
+		if (p_atlasFileConfiguration.contains(L"SpriteSheets") == true)
 		{
-			const auto& sheetsNode = p_atlasFileConfiguration[L"spriteSheets"];
+			const auto& sheetsNode = p_atlasFileConfiguration[L"SpriteSheets"];
 
-			if (!sheetsNode.isArray())
-				GENERATE_ERROR("The \"spriteSheets\" entry must be a JSON array");
+			if (sheetsNode.isArray() == false)
+			{
+				throw std::runtime_error("The \"SpriteSheets\" entry must be a JSON array");
+			}
 
 			for (const spk::JSON::Object* sheetPtr : sheetsNode.asArray())
 			{
 				const auto& sheet = *sheetPtr;
 
-				const std::wstring& name = sheet[L"name"].as<std::wstring>();
-				const std::wstring& path = sheet[L"path"].as<std::wstring>();
+				const std::wstring& name = sheet[L"Name"].as<std::wstring>();
+				const std::wstring& path = sheet[L"Path"].as<std::wstring>();
 
 				spk::Vector2Int size(
-					sheet[L"size"][L"x"].as<long>(),
-					sheet[L"size"][L"y"].as<long>());
+					sheet[L"Size"][L"x"].as<long>(),
+					sheet[L"Size"][L"y"].as<long>());
 
-				_spriteSheets[name] = spk::SpriteSheet(path, size);
+				_spriteSheets[name] = std::make_unique<spk::SpriteSheet>(path, size);
 			}
 		}
 
-		/********************  FONTS  *******************/
+		if (p_atlasFileConfiguration.contains(L"Fonts") == true)
 		{
-			const auto& fontsNode = p_atlasFileConfiguration[L"fonts"];
+			const auto& fontsNode = p_atlasFileConfiguration[L"Fonts"];
 
-			if (!fontsNode.isArray())
-				GENERATE_ERROR("The \"fonts\" entry must be a JSON array");
+			if (fontsNode.isArray() == false)
+			{
+				throw std::runtime_error("The \"Fonts\" entry must be a JSON array");
+			}
 
 			for (const spk::JSON::Object* fontPtr : fontsNode.asArray())
 			{
 				const auto& font = *fontPtr;
 
-				const std::wstring& name = font[L"name"].as<std::wstring>();
-				const std::wstring& path = font[L"path"].as<std::wstring>();
+				const std::wstring& name = font[L"Name"].as<std::wstring>();
+				const std::wstring& path = font[L"Path"].as<std::wstring>();
 
-				_fonts[name] = spk::Font(path);
+				_fonts[name] = std::make_unique<spk::Font>(path);
 			}
 		}
 	}
 
-	static spk::SafePointer<spk::Image> image(const std::wstring& p_name)
+	spk::SafePointer<spk::Image> image(const std::wstring& p_name)
 	{
 		if (_images.contains(p_name) == false)
 		{
 			throw std::runtime_error("Image not found: " + spk::StringUtils::wstringToString(p_name));
 		}
-		return &(_images[p_name]);
+		return (_images[p_name].get());
 	}
 
-	static spk::SafePointer<spk::SpriteSheet> spriteSheet(const std::wstring& p_name)
+	spk::SafePointer<spk::SpriteSheet> spriteSheet(const std::wstring& p_name)
 	{
 		if (_spriteSheets.contains(p_name) == false)
 		{
 			throw std::runtime_error("SpriteSheet not found: " + spk::StringUtils::wstringToString(p_name));
 		}
-		return &(_spriteSheets[p_name]);
-	} 
+		return (_spriteSheets[p_name].get());
+	}
 
-	static spk::SafePointer<spk::Font> font(const std::wstring& p_name)
+	spk::SafePointer<spk::Font> font(const std::wstring& p_name)
 	{
 		if (_fonts.contains(p_name) == false)
 		{
 			throw std::runtime_error("Font not found: " + spk::StringUtils::wstringToString(p_name));
 		}
-		return &(_fonts[p_name]);
+		return (_fonts[p_name].get());
 	}
 };
 
 class PushButton : public spk::PushButton
 {
 private:
+	AssetAtlas::Instanciator _assetAtlasInstanciator;
 
 public:
 	PushButton(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::PushButton(p_name, p_parent)
 	{
-		
+		setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"), PushButton::State::Released);
+		setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice_Dark"), PushButton::State::Pressed);
+		setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice_Light"), PushButton::State::Hovered);
+
+		setFont(AssetAtlas::instance()->font(L"defaultFont"));
+		setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+		setFontSize({16, 3});
 	}
 };
 
 class TextLabel : public spk::TextLabel
 {
 private:
+	AssetAtlas::Instanciator _assetAtlasInstanciator;
 
 public:
 	TextLabel(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::TextLabel(p_name, p_parent)
 	{
-		
+		setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
+
+		setFont(AssetAtlas::instance()->font(L"defaultFont"));
+
+		setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+		setFontSize({16, 3});
 	}
 };
 
 class TextEdit : public spk::TextEdit
 {
 private:
+	AssetAtlas::Instanciator _assetAtlasInstanciator;
 
 public:
 	TextEdit(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::TextEdit(p_name, p_parent)
 	{
-		
+		setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
+
+		setFont(AssetAtlas::instance()->font(L"defaultFont"));
+
+		setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+		setFontSize({16, 3});
 	}
 };
 
@@ -292,10 +335,15 @@ public:
 class MenuHUD : public spk::Screen
 {
 private:
-	TextEdit _ipTextEdit;
+	TextEdit _addressTextEdit;
 	PushButton _joinButton;
+	PushButton::Contract _joinButtonContract;
+
 	PushButton _hostButton;
+	PushButton::Contract _hostButtonContract;
+
 	PushButton _exitButton;
+	PushButton::Contract _exitButtonContract;
 
 	void _onGeometryChange()
 	{
@@ -308,30 +356,52 @@ private:
 		spk::Vector2Int editSize = {lineSize.x * 0.7, lineSize.y};
 		spk::Vector2Int buttonEditSize = {lineSize.x * 0.3 - space.x, lineSize.y};
 
-		_ipTextEdit.setGeometry(position, editSize);
+		_addressTextEdit.setGeometry(position, editSize);
 		_joinButton.setGeometry(position + spk::Vector2Int(0, lineSize.y + space.y) * 0 + spk::Vector2Int(editSize.x + space.x, 0), buttonEditSize);
 		_hostButton.setGeometry(position + spk::Vector2Int(0, lineSize.y + space.y) * 1, lineSize);
 		_exitButton.setGeometry(position + spk::Vector2Int(0, lineSize.y + space.y) * 2, lineSize);
 	}
 
+	void _onJoinRequest()
+	{
+		Client::instanciate();
+
+		std::wstring address = _addressTextEdit.text();
+		Client::instance()->setup(spk::StringUtils::wstringToString(address));
+	}
+
+	void _onHostRequest()
+	{
+
+	}
+
 public:
 	MenuHUD(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Screen(p_name, p_parent),
-		_ipTextEdit(p_name + L"/IpTextEdit", this),
+		_addressTextEdit(p_name + L"/IpTextEdit", this),
 		_joinButton(p_name + L"/JoinButton", this),
 		_hostButton(p_name + L"/HostButton", this),
 		_exitButton(p_name + L"/ExitButton", this)
 	{
-		_ipTextEdit.setPlaceholder(L"Enter IP address");
-		_ipTextEdit.activate();
+		_addressTextEdit.setPlaceholder(L"Enter IP address");
+		_addressTextEdit.activate();
 
 		_joinButton.setText(L"Join");
+		_joinButtonContract = _joinButton.subscribe([&]() {
+			_onJoinRequest();
+		});
 		_joinButton.activate();
 
 		_hostButton.setText(L"Host game");
+		_hostButtonContract = _hostButton.subscribe([&]() {
+			_onHostRequest();
+		});
 		_hostButton.activate();
 
 		_exitButton.setText(L"Quit");
+		_exitButtonContract = _exitButton.subscribe([&]() {
+			EventDispatcher::instance()->emit(Event::CloseApplication);
+		});
 		_exitButton.activate();
 	}
 };
@@ -339,6 +409,10 @@ public:
 class MainWidget : public spk::Widget
 {
 private:
+	spk::JSON::File _configurationFile;
+	AssetAtlas::Instanciator _assetAtlasInstanciator;
+	EventDispatcher::Instanciator _eventDispatcherInstanciator;
+
 	GameHUD _gameHUD;
 	EventDispatcher::Contract _gameHUDContract;
 	
@@ -354,14 +428,17 @@ private:
 public:
 	MainWidget(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Widget(p_name, p_parent),
+		_configurationFile(L"resources/configuration.json"),
+		_assetAtlasInstanciator(spk::JSON::File(_configurationFile[L"AssetsConfig"].as<std::wstring>())),
 		_gameHUD(p_name + L"/GameHUD", this),
 		_menuHUD(p_name + L"/MenuHUD", this)
 	{
-		_gameHUDContract = EventDispatcher::subscribe(Event::EnterGameHUD, [&]() {
+
+		_gameHUDContract = EventDispatcher::instance()->subscribe(Event::EnterGameHUD, [&]() {
 			_gameHUD.activate();
 		});
 
-		_menuHUDContract = EventDispatcher::subscribe(Event::EnterMenuHUD, [&]() {
+		_menuHUDContract = EventDispatcher::instance()->subscribe(Event::EnterMenuHUD, [&]() {
 			_menuHUD.activate();
 		});
 	}
@@ -373,7 +450,9 @@ int main()
 
 	spk::SafePointer<spk::Window> win = app.createWindow(L"TAAG", {{0, 0}, {800, 600}});
 
-	EventDispatcher::subscribe(Event::CloseApplication, [&]() {
+	EventDispatcher::Instanciator eventDispatcherInstanciator;
+
+	EventDispatcher::Contract closeApplicationContract = EventDispatcher::instance()->subscribe(Event::CloseApplication, [&]() {
 		app.quit(0);
 	});
 
@@ -381,7 +460,7 @@ int main()
 	mainWidget.setGeometry(win->geometry());
 	mainWidget.activate();
 
-	EventDispatcher::emit(Event::EnterMenuHUD);
+	EventDispatcher::instance()->emit(Event::EnterMenuHUD);
 
 	return (app.run());
 }

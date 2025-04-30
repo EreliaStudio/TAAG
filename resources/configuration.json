@@ -1,0 +1,4 @@
+{
+	"Port": 26500,
+	"AssetsConfig": "resources/assets/assets.json"
+}
