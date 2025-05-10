@@ -36,10 +36,11 @@ private:
 	std::unordered_map<std::wstring, std::unique_ptr<spk::SpriteSheet>> _spriteSheets;
 	std::unordered_map<std::wstring, std::unique_ptr<spk::Font>> _fonts;
 
-	AssetAtlas() = default;
-	AssetAtlas(const spk::JSON::File& p_atlasFileConfiguration)
+	AssetAtlas()
 	{
-		load(p_atlasFileConfiguration);
+		spk::JSON::File atlasFileConfiguration = spk::JSON::File("resources/assets/assets.json");
+		
+		load(atlasFileConfiguration);
 	}
 
 public:
