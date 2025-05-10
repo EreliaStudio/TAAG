@@ -123,9 +123,10 @@ private:
 	spk::Widget::Contract _onActivationContract;
 
 	Content _content;
-	spk::CommandPanel _commandPanel;
-	spk::CommandPanel::Contract _confirmContract;
-	spk::CommandPanel::Contract _cancelContract;
+	MessagePopup _messageBox;
+	CommandPanel _commandPanel;
+	CommandPanel::Contract _confirmContract;
+	CommandPanel::Contract _cancelContract;
 
 	void _onGeometryChange()
 	{
@@ -133,16 +134,20 @@ private:
 		spk::Vector2Int layoutPos = (geometry().size - layoutSize) / 2;
 
 		_layout.setGeometry({layoutPos, layoutSize});
+
+		_messageBox.setGeometry({200, {400, 200}});
 	}
 
 public:
 	NewGameMenu(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Screen(p_name, p_parent),
 		_content(p_name + L"/Content", this),
-		_commandPanel(p_name + L"/CommandPanel", this)
+		_commandPanel(p_name + L"/CommandPanel", this),
+		_messageBox(p_name + L"/MessageBox", this)
 	{
 		_onActivationContract = addActivationCallback([&](){
 			_content.clear();
+			_messageBox.deactivate();
 		});
 
 		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
@@ -154,7 +159,12 @@ public:
 		spk::SafePointer<spk::PushButton> cancelButton = _commandPanel.addButton(L"CancelButton", L"Cancel");
 		WidgetAddons::ApplyFormat(cancelButton);
 
-		_confirmContract = _commandPanel.subscribe(L"ConfirmButton", [&](){});
+		_messageBox.setLayer(100);
+		_confirmContract = _commandPanel.subscribe(L"ConfirmButton", [&]()
+		{
+			_messageBox.setLineText(0, L"Coucou !");
+			_messageBox.activate();
+		});
 		_cancelContract = _commandPanel.subscribe(L"CancelButton", [&](){EventDispatcher::emit(Event::EnterMainMenu);});
 
 		_content.activate();
