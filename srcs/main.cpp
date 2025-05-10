@@ -84,8 +84,7 @@ private:
 
 		TextLabel _nameLabel;
 		TextEdit _nameEdit;
-		spk::SpacerWidget _labelSpacer;
-		spk::SpacerWidget _editSpacer;
+		spk::SpacerWidget _spacer;
 
 		void _onGeometryChange()
 		{
@@ -97,8 +96,7 @@ private:
 			spk::Widget(p_name, p_parent),
 			_nameLabel(p_name + L"/NameLabel", this),
 			_nameEdit(p_name + L"/NameEdit", this),
-			_labelSpacer(p_name + L"/LabelSpacer", this),
-			_editSpacer(p_name + L"/EditSpacer", this)
+			_spacer(p_name + L"/Spacer", this)
 		{
 			_layout.setElementPadding({10, 10});
 
@@ -107,12 +105,11 @@ private:
 			_nameEdit.setPlaceholder(L"new world");
 
 			_layout.addRow(&_nameLabel,&_nameEdit, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
-			_layout.addRow(&_labelSpacer,&_editSpacer, spk::Layout::SizePolicy::VerticalExtend, spk::Layout::SizePolicy::HorizontalExtend);
+			_layout.addRow(nullptr,&_spacer, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::Extend);
 
 			_nameLabel.activate();
 			_nameEdit.activate();
-			_labelSpacer.activate();
-			_editSpacer.activate();
+			_spacer.activate();
 		}
 
 		void clear()
