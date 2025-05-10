@@ -73,64 +73,6 @@ public:
 	}
 };
 
-class CommandPushButton : public spk::Widget
-{
-private:
-	spk::HorizontalLayout _layout;
-
-	spk::SpacerWidget _spacer;
-	PushButton _confirmButton;
-	PushButton _cancelButton;
-
-	void _onGeometryChange()
-	{
-		_layout.setGeometry({0, geometry().size});
-	}
-
-public:
-	CommandPushButton(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-		spk::Widget(p_name, p_parent),
-		_spacer(p_name + L"/SpacerWidget", this),
-		_confirmButton(p_name + L"/ConfirmButton", this),
-		_cancelButton(p_name + L"/CancelButton", this)
-	{
-		_layout.setElementPadding({10, 10});
-		_confirmButton.setText(L"Confirm");
-		_cancelButton.setText(L"Cancel");
-
-		_spacer.activate();
-		_confirmButton.activate();
-		_cancelButton.activate();
-
-		_layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
-		_layout.addWidget(&_confirmButton, spk::Layout::SizePolicy::Minimum);
-		_layout.addWidget(&_cancelButton, spk::Layout::SizePolicy::Minimum);
-	}
-
-	void setOnConfirm(const PushButton::Job& p_job)
-	{
-		_confirmButton.setOnClick(p_job);
-	}
-
-	void setOnCancel(const PushButton::Job& p_job)
-	{
-		_cancelButton.setOnClick(p_job);
-	}
-
-	spk::Vector2UInt minimalSize() const override
-	{
-		spk::Vector2UInt confirmButtonMinimalSize = _confirmButton.minimalSize();
-		spk::Vector2UInt cancelButtonMinimalSize = _cancelButton.minimalSize();
-		spk::Vector2UInt padding = _layout.elementPadding();
-
-		spk::Vector2UInt result = {
-			confirmButtonMinimalSize.x + cancelButtonMinimalSize.x + padding.x,
-			std::max(confirmButtonMinimalSize.y, cancelButtonMinimalSize.y)
-		};
-
-		return (result);
-	}
-};
 
 class NewGameMenu : public spk::Screen
 {
@@ -164,8 +106,8 @@ private:
 
 			_nameEdit.setPlaceholder(L"new world");
 
-			_layout.addRow(&_nameLabel,&_nameEdit, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::Minimum);
-			_layout.addRow(&_labelSpacer,&_editSpacer, spk::Layout::SizePolicy::Extend, spk::Layout::SizePolicy::Extend);
+			_layout.addRow(&_nameLabel,&_nameEdit, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
+			_layout.addRow(&_labelSpacer,&_editSpacer, spk::Layout::SizePolicy::VerticalExtend, spk::Layout::SizePolicy::HorizontalExtend);
 
 			_nameLabel.activate();
 			_nameEdit.activate();
@@ -184,7 +126,9 @@ private:
 	spk::Widget::Contract _onActivationContract;
 
 	Content _content;
-	CommandPushButton _commandPushButton;
+	spk::CommandPanel _commandPanel;
+	spk::CommandPanel::Contract _confirmContract;
+	spk::CommandPanel::Contract _cancelContract;
 
 	void _onGeometryChange()
 	{
@@ -198,19 +142,26 @@ public:
 	NewGameMenu(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Screen(p_name, p_parent),
 		_content(p_name + L"/Content", this),
-		_commandPushButton(p_name + L"/CommandPushButton", this)
+		_commandPanel(p_name + L"/CommandPanel", this)
 	{
 		_onActivationContract = addActivationCallback([&](){
 			_content.clear();
 		});
 
 		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
-		_layout.addWidget(&_commandPushButton, spk::Layout::SizePolicy::Minimum);
+		_layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
 
-		_commandPushButton.setOnCancel([&](){EventDispatcher::emit(Event::EnterMainMenu);});
+		spk::SafePointer<spk::PushButton> confirmButton = _commandPanel.addButton(L"ConfirmButton", L"Confirm");
+		WidgetAddons::ApplyFormat(confirmButton);
+		
+		spk::SafePointer<spk::PushButton> cancelButton = _commandPanel.addButton(L"CancelButton", L"Cancel");
+		WidgetAddons::ApplyFormat(cancelButton);
+
+		_confirmContract = _commandPanel.subscribe(L"ConfirmButton", [&](){});
+		_cancelContract = _commandPanel.subscribe(L"CancelButton", [&](){EventDispatcher::emit(Event::EnterMainMenu);});
 
 		_content.activate();
-		_commandPushButton.activate();
+		_commandPanel.activate();
 	}
 };
 
