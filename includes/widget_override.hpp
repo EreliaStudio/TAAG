@@ -164,6 +164,7 @@ public:
 		_spacer(p_name + L"/Spacer", this),
 		_commandPanel(p_name + L"/CommandPanel", this)
 	{
+		_layout.setElementPadding(0);
 		for (size_t i = 0; i < 4; i++)
 		{
 			_lineLabels[i].setNineSlice(nullptr);
@@ -188,6 +189,7 @@ public:
 	void setLineText(size_t p_line, const std::wstring& p_text)
 	{
 		_lineLabels[p_line].setText(p_text);
+		requireGeometryUpdate();
 	}
 
 	spk::Vector2UInt minimalSize() const override

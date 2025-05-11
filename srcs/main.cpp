@@ -116,6 +116,35 @@ private:
 		{
 			_nameEdit.setText(L"");
 		}
+
+		std::wstring worldName() const
+		{
+			return (_nameEdit.text());
+		}
+
+		std::wstring subfolderName() const
+		{
+			std::wstring result = worldName();
+
+			auto trim = [](std::wstring& s)
+			{
+				const std::wstring whitespace = L" \t";
+				const size_t first = s.find_first_not_of(whitespace);
+				const size_t last  = s.find_last_not_of(whitespace);
+
+				if (first == std::wstring::npos)
+				{
+					s.clear();
+					return;
+				}
+				s = s.substr(first, last - first + 1);
+			};
+			trim(result);
+
+			std::replace(result.begin(), result.end(), L' ', L'_');
+
+			return result;
+		}
 	};
 
 	spk::VerticalLayout _layout;
@@ -135,7 +164,47 @@ private:
 
 		_layout.setGeometry({layoutPos, layoutSize});
 
-		_messageBox.setGeometry({200, {400, 200}});
+		_messageBox.setMinimumContentSize(_messageBox.content()->minimalSize());
+		spk::Vector2Int messageBoxSize = _messageBox.minimalSize();
+		spk::Vector2Int messageBoxAnchor = (geometry().size - messageBoxSize) / 2;
+		_messageBox.setGeometry(messageBoxAnchor, messageBoxSize);
+	}
+
+	void _tryLaunchGame()
+	{
+		const std::filesyetem::path gameSaveFolder = path("resources/saves") / _content.subfolderName();
+
+		// ── 1) If the folder already exists, show an error in the message box ─────
+		if (std::filesyetem::exists(gameSaveFolder))
+		{
+			_messageBox.setLineText(0, L"The chosen world already exists!");
+			_messageBox.setLineText(1, L"Please enter another name or delete the old save.");
+			_messageBox.activate();
+			return;
+		}
+
+		// ── 2) Create the directory hierarchy (resources/saves/<folder>) ──────────
+		std::error_code ec;
+		std::filesyetem::create_directories(gameSaveFolder, ec);
+		if (ec)
+		{
+			_messageBox.setLineText(0, L"Unable to create save directory!");
+			_messageBox.setLineText(1, spk::StringUtils::stringToWstring(ec.message()));
+			_messageBox.activate();
+			return;
+		}
+
+		// ── 3) Seed a fresh save.json with the world name ─────────────────────────
+		spk::JSON::File saveFile;
+
+		// File::root() was declared const in the header you pasted, so either:
+		//  a) add a non-const overload, or
+		//  b) build a temporary Object and assign it.
+		// One clean way is to expose a non-const root() in File.  Assuming that:
+		//
+		saveFile.root().addAttribute(L"World name") = _content.worldName();
+
+		saveFile.save(gameSaveFolder / "save.json");
 	}
 
 public:
@@ -162,8 +231,7 @@ public:
 		_messageBox.setLayer(100);
 		_confirmContract = _commandPanel.subscribe(L"ConfirmButton", [&]()
 		{
-			_messageBox.setLineText(0, L"Coucou !");
-			_messageBox.activate();
+			_tryLaunchGame();
 		});
 		_cancelContract = _commandPanel.subscribe(L"CancelButton", [&](){EventDispatcher::emit(Event::EnterMainMenu);});
 
