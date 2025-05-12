@@ -141,76 +141,79 @@ public:
 class MessagePopupContent : public spk::Widget
 {
 private:
-	spk::VerticalLayout _layout;
+    spk::VerticalLayout _layout;
+    std::vector<std::unique_ptr<TextLabel>> _lineLabels;
+    spk::SpacerWidget _spacer;
+    CommandPanel _commandPanel;
 
-	TextLabel _lineLabels[4];
-	spk::SpacerWidget _spacer;
-	CommandPanel _commandPanel;
+    void _onGeometryChange() override
+    {
+        _layout.setGeometry({0, geometry().size});
+    }
 
-	void _onGeometryChange()
-	{
-		_layout.setGeometry({0, geometry().size});
-	}
+    void _createLabel()
+    {
+        auto lbl = std::make_unique<TextLabel>(name() + L"/Line" + std::to_wstring(_lineLabels.size()), this);
+
+        lbl->setNineSlice(nullptr);
+        lbl->setTextAlignment(spk::HorizontalAlignment::Centered, spk::VerticalAlignment::Centered);
+        lbl->activate();
+
+		_layout.removeWidget(&_spacer);
+        _layout.addWidget(lbl.get(), spk::Layout::SizePolicy::Minimum);
+        _lineLabels.emplace_back(std::move(lbl));
+		_layout.addWidget(&_spacer);
+    }
 
 public:
-	MessagePopupContent(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) : 
+    MessagePopupContent(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Widget(p_name, p_parent),
-		_lineLabels{
-			TextLabel(p_name + L"/LineLabel A", this),
-			TextLabel(p_name + L"/LineLabel B", this),
-			TextLabel(p_name + L"/LineLabel C", this),
-			TextLabel(p_name + L"/LineLabel D", this),
-		},
-		_spacer(p_name + L"/Spacer", this),
-		_commandPanel(p_name + L"/CommandPanel", this)
-	{
-		_layout.setElementPadding(0);
-		for (size_t i = 0; i < 4; i++)
-		{
-			_lineLabels[i].setNineSlice(nullptr);
-			_lineLabels[i].setTextAlignment(spk::HorizontalAlignment::Centered, spk::VerticalAlignment::Centered);
-			_lineLabels[i].activate();
+        _spacer(p_name + L"/Spacer", this),
+        _commandPanel(p_name + L"/CommandPanel", this)
+    {
+        _layout.setElementPadding(0);
 
-			_layout.addWidget(&_lineLabels[i], spk::Layout::SizePolicy::Minimum);
-		}
+        _layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
 
-		_layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
+        _commandPanel.activate();
+        _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
+    }
 
-		_commandPanel.activate();
-		
-		_layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
-	}
+    void setLineText(size_t p_line, const std::wstring& p_text)
+    {
+        while (p_line >= _lineLabels.size())
+        {
+            _createLabel();
+        }
 
-	spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_buttonName, const std::wstring& p_buttonText)
-	{
-		return (_commandPanel.addButton(p_buttonName, p_buttonText));
-	}
+        _lineLabels[p_line]->setText(p_text);
+        requireGeometryUpdate();
+    }
 
-	void setLineText(size_t p_line, const std::wstring& p_text)
-	{
-		_lineLabels[p_line].setText(p_text);
-		requireGeometryUpdate();
-	}
+    spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_buttonName, const std::wstring& p_buttonText)
+    {
+        return _commandPanel.addButton(p_buttonName, p_buttonText);
+    }
 
-	spk::Vector2UInt minimalSize() const override
+    spk::Vector2UInt minimalSize() const override
     {
         const uint32_t padY = _layout.elementPadding().y;
 
-        uint32_t maxWidth   = 0;
+        uint32_t maxWidth    = 0;
         uint32_t totalHeight = 0;
         uint32_t childCount  = 0;
 
         for (const auto& lbl : _lineLabels)
         {
-            const spk::Vector2UInt sz = lbl.minimalSize();
-            maxWidth    = std::max(maxWidth,  sz.x);
+            const spk::Vector2UInt sz = lbl->minimalSize();
+            maxWidth    = std::max(maxWidth, sz.x);
             totalHeight += sz.y;
             ++childCount;
         }
 
         {
             const spk::Vector2UInt sz = _commandPanel.minimalSize();
-            maxWidth    = std::max(maxWidth,  sz.x);
+            maxWidth    = std::max(maxWidth, sz.x);
             totalHeight += sz.y;
             ++childCount;
         }
@@ -218,7 +221,7 @@ public:
         if (childCount > 1)
             totalHeight += padY * (childCount - 1);
 
-        return { maxWidth, totalHeight };
+        return {maxWidth, totalHeight};
     }
 };
 
