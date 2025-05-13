@@ -217,21 +217,15 @@ private:
 
 		_layout.setGeometry({layoutPos, layoutSize});
 
-		if (_alreadyExistMessageBox.isActive() == true)
-		{
 			_alreadyExistMessageBox.setMinimumContentSize(_alreadyExistMessageBox.content()->minimalSize());
 			spk::Vector2Int messageBoxSize = _alreadyExistMessageBox.minimalSize();
 			spk::Vector2Int messageBoxAnchor = (geometry().size - messageBoxSize) / 2;
 			_alreadyExistMessageBox.setGeometry(messageBoxAnchor, messageBoxSize);
-		}
 
-		if (_genericMessageBox.isActive() == true)
-		{
 			_genericMessageBox.setMinimumContentSize(_genericMessageBox.content()->minimalSize());
-			spk::Vector2Int messageBoxSize = _genericMessageBox.minimalSize();
-			spk::Vector2Int messageBoxAnchor = (geometry().size - messageBoxSize) / 2;
+			messageBoxSize = _genericMessageBox.minimalSize();
+			messageBoxAnchor = (geometry().size - messageBoxSize) / 2;
 			_genericMessageBox.setGeometry(messageBoxAnchor, messageBoxSize);
-		}
 	}
 
 	long _encodeSeed(const std::wstring& s)
@@ -359,7 +353,7 @@ public:
 		_onActivationContract = addActivationCallback([&](){
 			_content.clear();
 			_genericMessageBox.deactivate();
-			_genericMessageBox.deactivate();
+			_alreadyExistMessageBox.deactivate();
 		});
 
 		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
