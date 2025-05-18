@@ -164,7 +164,7 @@ private:
         spk::PushButton::Contract         contract;
     };
 
-    std::vector<ButtonData> _instanciedButtons;
+    std::map<std::wstring, ButtonData> _instanciedButtons;
 
 	using spk::MessageBox::addButton;
 
@@ -205,4 +205,16 @@ public:
 
         return newButton;
     }
+
+	void setButtonCallback(const std::wstring& p_buttonName, const spk::PushButton::Job& p_job)
+	{
+		if (_instanciedButtons.contains(p_buttonName) == false)
+		{
+			throw std::runtime_error("Button not found");
+		}
+		
+		auto& buttonHolder = _instanciedButtons[p_buttonName];
+
+		buttonHolder.button.contract = buttonHolder.button->subscribe(p_job);
+	}
 };

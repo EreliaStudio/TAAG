@@ -9,32 +9,27 @@
 
 struct World
 {
+	struct SaveFile
+	{		
+		static std::wstring convertWorldNameToFileName(const std::wstring& p_name)
+		{
+			std::wstring result = spk::StringUtils::trimWhitespace(p_name);
+
+			std::replace(result.begin(), result.end(), L' ', L'_');
+
+			return result;
+		}
+
+		static std::filesystem::path compose(const std::wstring& p_name)
+		{
+			static std::filesystem::path folderPath = "resources/saves";
+
+			return (folderPath / convertWorldNameToFileName(p_name) / "save.json");
+		}
+	};
+	
 	std::wstring name;
 	long seed;
-
-	static std::wstring convertWorldNameToFileName(const std::wstring& p_name)
-	{
-		std::wstring result = p_name;
-
-		auto trim = [](std::wstring& p_name)
-		{
-			const std::wstring whitespace = L" \t";
-			const size_t first = p_name.find_first_not_of(whitespace);
-			const size_t last  = p_name.find_last_not_of(whitespace);
-
-			if (first == std::wstring::npos)
-			{
-				p_name.clear();
-				return;
-			}
-			p_name = p_name.substr(first, last - first + 1);
-		};
-		trim(result);
-
-		std::replace(result.begin(), result.end(), L' ', L'_');
-
-		return result;
-	}
 
 	void load(const std::filesystem::path& p_folderPath)
 	{
@@ -169,13 +164,59 @@ public:
 	}
 };
 
+class InformationMessageBox : public MessageBox
+{
+public:
+    InformationMessageBox(const std::wstring& p_name,
+                          spk::SafePointer<spk::Widget> p_parent) :
+        MessageBox(p_name, p_parent)
+    {
+        setTitle(L"Information message");
+        addButton(p_name + L"/CloseButton", L"Close", [&] { deactivate(); });
+
+        setLayer(100); 
+        setMinimalWidth(0);
+    }
+};
+
+class RequestMessageBox : public MessageBox
+{
+private:
+	spk::SafePointer<spk::PushButton> _firstButton;
+	spk::SafePointer<spk::PushButton> _secondButton;
+
+public:
+    RequestMessageBox(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+        MessageBox(p_name, p_parent)
+    {
+        setTitle(L"Request");
+        setLayer(100);
+        setMinimalWidth(0);
+
+        _firstButton = addButton(p_name + L"/FirstButton",  L"FirstButton", [&]{});
+        _secondButton = addButton(p_name + L"/SecondButton", L"SecondButton", [&]{});
+    }
+
+    void configure(const std::wstring& p_firstCaption, const std::function<void()>& p_firstAction,
+                   const std::wstring& p_secondCaption, const std::function<void()>& p_secondAction)
+    {
+		_firstButton->setName(p_name + L"/" + p_firstCaption + L"Button");
+        _firstButton->setText(p_firstCaption);
+        _secondButton->setText(p_secondCaption);
+
+		_secondButton->setName(p_name + L"/" + p_secondCaption + L"Button");
+        _firstContract = setButtonCallback(p_firstAction);
+        _secondContract = setButtonCallback(p_secondAction);
+    }
+};
+
 class NewGameMenu : public spk::Screen
 {
 private:
- struct Content : public spk::Widget
+    struct Content : public spk::Widget
     {
-        using NameRow  = FormRow<TextEdit>;
-        using SeedRow  = FormRow<TextEdit>;
+        using NameRow = FormRow<TextEdit>;
+        using SeedRow = FormRow<TextEdit>;
 
         spk::FormLayout _layout;
 
@@ -183,29 +224,28 @@ private:
         SeedRow _seedRow;
         spk::SpacerWidget _spacer;
 
-        void _onGeometryChange()
+        void _onGeometryChange() override
         {
             _layout.setGeometry({0, geometry().size});
         }
 
-    public:
         Content(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-			spk::Widget(p_name, p_parent),
-			_nameRow(p_name + L"/Name", this),
-			_seedRow(p_name + L"/Seed", this),
-			_spacer(p_name + L"/Spacer", this)
+            spk::Widget(p_name, p_parent),
+            _nameRow(p_name + L"/Name", this),
+            _seedRow(p_name + L"/Seed", this),
+            _spacer(p_name + L"/Spacer", this)
         {
             _layout.setElementPadding({10, 10});
 
             _nameRow.label.setText(L"Name:");
             _nameRow.field.setPlaceholder(L"new world");
-			_nameRow.activate();
+            _nameRow.activate();
 
             _seedRow.label.setText(L"Seed:");
             _seedRow.field.setPlaceholder(L"000000000");
-			_seedRow.activate();
+            _seedRow.activate();
 
-            _layout.addRow(_nameRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend); 
+            _layout.addRow(_nameRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
             _layout.addRow(_seedRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
             _layout.addRow(nullptr, &_spacer, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::Extend);
         }
@@ -216,142 +256,120 @@ private:
             _seedRow.field.setText(SeedGenerator::generateRandomSeed(12));
         }
 
-        std::wstring seed() const       { return _seedRow.field.text();   }
-        std::wstring worldName() const  { return _nameRow.field.text();   }
+        std::wstring seed() const { return _seedRow.field.text(); }
+        std::wstring worldName() const { return _nameRow.field.text(); }
     };
 
-	Context::Instanciator _contextInstanciator;
-	spk::VerticalLayout _layout;
+    Context::Instanciator _contextInstanciator;
 
-	spk::Widget::Contract _onActivationContract;
+    spk::VerticalLayout _layout;
+    spk::Widget::Contract _onActivationContract;
 
-	Content _content;
-	MessageBox  _alreadyExistMessageBox;
-    MessageBox  _genericMessageBox;
-	CommandPanel _commandPanel;
-	CommandPanel::Contract _confirmContract;
-	CommandPanel::Contract _cancelContract;
+    Content _content;
 
-	void _onGeometryChange()
-	{
-		spk::Vector2Int layoutSize = geometry().size / 1.2f;
-		spk::Vector2Int layoutPos = (geometry().size - layoutSize) / 2;
+    RequestMessageBox      _alreadyExistMessageBox;
+    InformationMessageBox  _genericMessageBox;
 
-		_layout.setGeometry({layoutPos, layoutSize});
+    CommandPanel _commandPanel;
 
-		auto centerBox = [this](MessageBox& box)
+    void _onGeometryChange() override
+    {
+        spk::Vector2Int layoutSize = geometry().size / 1.2f;
+        spk::Vector2Int layoutPos  = (geometry().size - layoutSize) / 2;
+        _layout.setGeometry({layoutPos, layoutSize});
+
+        auto boxSize = _alreadyExistMessageBox.minimalSize();
+        auto boxPos  = (geometry().size - boxSize) / 2;
+        _alreadyExistMessageBox.setGeometry(boxPos, boxSize);
+
+        boxSize = _genericMessageBox.minimalSize();
+        boxPos  = (geometry().size - boxSize) / 2;
+        _genericMessageBox.setGeometry(boxPos, boxSize);
+    }
+
+    void _createWorldSave(const std::wstring& p_worldName)
+    {
+        const std::filesystem::path gameSaveFolder = World::SaveFile::compose(p_worldName);
+
+        if (std::filesystem::exists(gameSaveFolder))
         {
-            const auto boxSize = box.minimalSize();
-            const auto boxPos  = (geometry().size - boxSize) / 2;
-            box.setGeometry(boxPos, boxSize);
-        };
-        centerBox(_alreadyExistMessageBox);
-        centerBox(_genericMessageBox);
-	}
+            _alreadyExistMessageBox.setText(L"The world [" + p_worldName + L"] already exists!\nPlease enter another name or delete the old save.");
+            _alreadyExistMessageBox.activate();
+            return;
+        }
 
-	std::filesystem::path _composeSaveFolderPath(const std::wstring& fileName)
-	{
-		return (std::filesystem::path("resources/saves") / World::convertWorldNameToFileName(fileName));
-	}
+        std::error_code ec;
+        std::filesystem::create_directories(gameSaveFolder, ec);
+        if (ec)
+        {
+            _genericMessageBox.setText(L"Unable to create save directory!\n" + spk::StringUtils::stringToWString(ec.message()));
+            _genericMessageBox.activate();
+            return;
+        }
 
-	void _createWorldSave(const std::wstring& p_worldName)
-	{
-		const std::wstring fileName = World::convertWorldNameToFileName(p_worldName);
-		const std::filesystem::path gameSaveFolder = _composeSaveFolderPath(fileName);
+        Context::instance()->world.name = _content.worldName();
+        Context::instance()->world.seed = SeedGenerator::encodeSeed(_content.seed());
+        Context::instance()->world.save(gameSaveFolder);
 
-		if (std::filesystem::exists(gameSaveFolder))
-		{
-			_alreadyExistMessageBox.setText(L"The world [" + p_worldName + L"] already exists!\nPlease enter another name or delete the old save.");
-			_alreadyExistMessageBox.activate();
-			return;
-		}
+        EventDispatcher::emit(Event::EnterGameMode);
+    }
 
-		std::error_code ec;
-		std::filesystem::create_directories(gameSaveFolder, ec);
-		if (ec)
-		{
-			_genericMessageBox.setText(L"Unable to create save directory!\n" + spk::StringUtils::stringToWString(ec.message()));
-			_genericMessageBox.activate();
-			return;
-		}
+    void _deleteWorldSave(const std::wstring& p_worldName)
+    {
+        const std::filesystem::path gameSaveFolder = World::SaveFile::compose(p_worldName);
 
-		Context::instance()->world.name = _content.worldName();
-		Context::instance()->world.seed = SeedGenerator::encodeSeed(_content.seed());
+        if (!std::filesystem::exists(gameSaveFolder))
+        {
+            _genericMessageBox.setText(L"The world [" + p_worldName + L"] doesn't exist!\nNothing to delete.");
+            _genericMessageBox.activate();
+            return;
+        }
 
-		Context::instance()->world.save(gameSaveFolder);
+        std::error_code ec;
+        std::filesystem::remove_all(gameSaveFolder, ec);
+        if (ec)
+        {
+            _genericMessageBox.setText(L"Unable to delete save directory!\n" + spk::StringUtils::stringToWString(ec.message()));
+            _genericMessageBox.activate();
+            return;
+        }
 
-		EventDispatcher::emit(Event::EnterGameMode);
-	}
-
-	void _deleteWorldSave(const std::wstring& p_worldName)
-	{
-		const std::wstring fileName = World::convertWorldNameToFileName(p_worldName);
-		const std::filesystem::path gameSaveFolder = _composeSaveFolderPath(fileName);
-
-		if (!std::filesystem::exists(gameSaveFolder))
-		{
-			_genericMessageBox.setText(L"The world [" + p_worldName + L"] doesn't exist!\nNothing to delete.");
-			_genericMessageBox.activate();
-			return;
-		}
-
-		std::error_code ec;
-		std::filesystem::remove_all(gameSaveFolder, ec);
-
-		if (ec)
-		{
-			_genericMessageBox.setText(L"Unable to delete save directory!\n" + spk::StringUtils::stringToWString(ec.message()));
-			_genericMessageBox.activate();
-			return;
-		}
-
-		_genericMessageBox.setText(L"World [" + p_worldName + L"] deleted successfully.");
-		_genericMessageBox.activate();
-		_alreadyExistMessageBox.deactivate();
-
-		requireGeometryUpdate();
-	}
+        _genericMessageBox.setText(L"World [" + p_worldName + L"] deleted successfully.");
+        _genericMessageBox.activate();
+        _alreadyExistMessageBox.deactivate();
+        requireGeometryUpdate();
+    }
 
 public:
-	NewGameMenu(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-		spk::Screen(p_name, p_parent),
-		_content(p_name + L"/Content", this),
-		_commandPanel(p_name + L"/CommandPanel", this),
-		_genericMessageBox(p_name + L"/GenericMessageBox", this),
-		_alreadyExistMessageBox(p_name + L"/AlreadyExistMessageBox", this)
-	{
-		_onActivationContract = addActivationCallback([&](){
-			_content.clear();
-			_content.activate();
-			_commandPanel.activate();
-			_genericMessageBox.deactivate();
-			_alreadyExistMessageBox.deactivate();
-		});
+    NewGameMenu(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+        spk::Screen(p_name, p_parent),
+        _content(p_name + L"/Content", this),
+        _commandPanel(p_name + L"/CommandPanel", this),
+        _genericMessageBox(p_name + L"/GenericMessageBox", this),
+        _alreadyExistMessageBox(p_name + L"/AlreadyExistMessageBox", this)
+    {
+        _onActivationContract = addActivationCallback([&]
+        {
+            _content.clear();
+            _content.activate();
+            _commandPanel.activate();
+            _genericMessageBox.deactivate();
+            _alreadyExistMessageBox.deactivate();
+        });
 
-		_genericMessageBox.setTitle(L"Information message");
         _alreadyExistMessageBox.setTitle(L"Error message");
-
-        _alreadyExistMessageBox.addButton(L"DeleteButton", L"Delete save",
-            [&]{ _deleteWorldSave(_content.worldName()); });
-
-        _alreadyExistMessageBox.addButton(L"CloseButton", L"Close",
-            [&]{ _alreadyExistMessageBox.deactivate(); });
-
-        _genericMessageBox.addButton(L"CloseButton", L"Close",
-            [&]{ _genericMessageBox.deactivate(); });
-
-        _genericMessageBox.setLayer(100);
-        _alreadyExistMessageBox.setLayer(100);
-
-		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
-		_layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
+        _alreadyExistMessageBox.configure(
+				L"Delete save",  [&]{ _deleteWorldSave(_content.worldName()); },
+				L"Close", [&]{ _alreadyExistMessageBox.deactivate(); }
+			);
 
         _commandPanel.addButton(L"ConfirmButton", L"Confirm", [&]{ _createWorldSave(_content.worldName()); });
-		_commandPanel.addButton(L"CancelButton",  L"Cancel", [&]{ EventDispatcher::emit(Event::EnterMainMenu); });
 
-		_genericMessageBox.setMinimalWidth(0);
-		_alreadyExistMessageBox.setMinimalWidth(0);
-	}
+        _commandPanel.addButton(L"CancelButton", L"Cancel", [&]{ EventDispatcher::emit(Event::EnterMainMenu); });
+
+        _layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
+        _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
+    }
 };
 
 class LoadGameMenu : public spk::Screen
