@@ -25,6 +25,14 @@
 				"x":3,
 				"y":3
 			}
+		},
+		{
+			"Name":"saveIcons",
+			"Path":"resources/assets/textures/saveIcons.png",
+			"Size":{
+				"x":10,
+				"y":2
+			}
 		}
 	],
 	"Fonts":[

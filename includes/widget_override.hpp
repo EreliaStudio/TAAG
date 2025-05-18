@@ -10,6 +10,17 @@ private:
 	static inline AssetAtlas::Instanciator _assetAtlasInstanciator;
 
 public:
+	static inline spk::Font::Size defaultFontSize = {16, 5};
+	static inline spk::Color defaultFontColor = spk::Color::white;
+	static inline spk::Color defaultOutlineColor = spk::Color::black;
+	
+	template<typename T>
+	static void centerInParent(T* p_object, const spk::Vector2UInt& p_size, const spk::Geometry2D& p_geometry)
+	{
+		spk::Vector2Int widgetAnchor = (p_geometry.size - p_size) / 2;
+		p_object->setGeometry({widgetAnchor, p_size});
+	}
+
 	static void ApplyFormat(spk::SafePointer<spk::Frame> p_widget)
 	{
 		p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
@@ -22,32 +33,32 @@ public:
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice_Light"), spk::PushButton::State::Hovered);
 
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
-        p_widget->setFontSize({16, 3});
+        p_widget->setFontColor(defaultFontColor, defaultOutlineColor);
+        p_widget->setFontSize(defaultFontSize);
     }
 
     static void ApplyFormat(spk::SafePointer<spk::TextLabel> p_widget)
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
-        p_widget->setFontSize({16, 3});
+        p_widget->setFontColor(defaultFontColor, defaultOutlineColor);
+        p_widget->setFontSize(defaultFontSize);
     }
 
     static void ApplyFormat(spk::SafePointer<spk::TextEdit> p_widget)
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
-        p_widget->setFontSize({16, 3});
+        p_widget->setFontColor(defaultFontColor, defaultOutlineColor);
+        p_widget->setFontSize(defaultFontSize);
     }
 
     static void ApplyFormat(spk::SafePointer<spk::TextArea> p_widget)
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
-        p_widget->setFontSize({16, 3});
+        p_widget->setFontColor(defaultFontColor, defaultOutlineColor);
+        p_widget->setFontSize(defaultFontSize);
     }
 
 	static void ApplyFormat(spk::SafePointer<spk::IInterfaceWindow::MenuBar> p_menuBar)
@@ -112,6 +123,13 @@ public:
 
 class CommandPanel : public spk::CommandPanel
 {
+public:
+	struct Descriptor
+	{
+		std::wstring text;
+		spk::PushButton::Job job;
+	};
+
 private:
 	struct ButtonData
     {
@@ -128,6 +146,15 @@ public:
 		spk::CommandPanel(p_name, p_parent)
 	{
 
+	}
+
+	CommandPanel(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent, std::initializer_list<Descriptor> descriptors) :
+		spk::CommandPanel(p_name, p_parent)
+	{
+		for (const auto& descriptor : descriptors)   
+		{
+			addButton(p_name + L"/" + descriptor.text + L"Button", descriptor.text, descriptor.job);
+		}
 	}
 
     spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_name, const std::wstring& p_text, const spk::PushButton::Job& p_job)
@@ -180,11 +207,6 @@ public:
 		setTitle(L"Unnamed message box");
 	}
 
-	void setTitle(const std::wstring& p_title)
-	{
-		menuBar()->titleLabel()->setText(p_title);
-	}
-
 	void setText(const std::wstring& p_text) override
 	{
 		spk::MessageBox::setText(p_text);
@@ -198,7 +220,7 @@ public:
 
         WidgetAddons::ApplyFormat(newButton);
 
-        _instanciedButtons.emplace_back(ButtonData{
+        _instanciedButtons.emplace(p_name, ButtonData{
             newButton,
             newButton->subscribe(p_job)
         });
@@ -215,6 +237,69 @@ public:
 		
 		auto& buttonHolder = _instanciedButtons[p_buttonName];
 
-		buttonHolder.button.contract = buttonHolder.button->subscribe(p_job);
+		buttonHolder.contract = buttonHolder.button->subscribe(p_job);
 	}
+
+	void show(const std::wstring& p_text)
+    {
+        setText(p_text);
+		activate();
+    }
+};
+
+class InformationMessageBox : public spk::InformationMessageBox
+{
+public:
+    InformationMessageBox(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+        spk::InformationMessageBox(p_name, p_parent)
+    {
+		WidgetAddons::ApplyFormat(this);
+
+		WidgetAddons::ApplyFormat(&(textArea()));
+
+		WidgetAddons::ApplyFormat(button());
+    }
+
+	void setText(const std::wstring& p_text) override
+	{
+		spk::MessageBox::setText(p_text);
+		setMinimalWidth(commandPanel().minimalSize().x * 2);
+		parent()->requireGeometryUpdate();
+	}
+
+	void show(const std::wstring& p_text)
+    {
+        setText(p_text);
+		activate();
+    }
+};
+
+class RequestMessageBox : public spk::RequestMessageBox
+{
+private:
+
+public:
+    RequestMessageBox(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+        spk::RequestMessageBox(p_name, p_parent)
+    {
+		WidgetAddons::ApplyFormat(this);
+
+		WidgetAddons::ApplyFormat(&(textArea()));
+
+		WidgetAddons::ApplyFormat(firstButton());
+		WidgetAddons::ApplyFormat(secondButton());
+    }
+
+	void setText(const std::wstring& p_text) override
+	{
+		spk::MessageBox::setText(p_text);
+		setMinimalWidth(commandPanel().minimalSize().x * 2);
+		parent()->requireGeometryUpdate();
+	}
+
+	void show(const std::wstring& p_text)
+    {
+        setText(p_text);
+		activate();
+    }
 };
