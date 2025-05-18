@@ -22,7 +22,7 @@ public:
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice_Light"), spk::PushButton::State::Hovered);
 
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
         p_widget->setFontSize({16, 3});
     }
 
@@ -30,7 +30,7 @@ public:
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
         p_widget->setFontSize({16, 3});
     }
 
@@ -38,7 +38,15 @@ public:
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
-        p_widget->setTextColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
+        p_widget->setFontSize({16, 3});
+    }
+
+    static void ApplyFormat(spk::SafePointer<spk::TextArea> p_widget)
+    {
+        p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
+        p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
+        p_widget->setFontColor(spk::Color(255, 255, 255), spk::Color(0, 0, 0));
         p_widget->setFontSize({16, 3});
     }
 
@@ -51,15 +59,13 @@ public:
         ApplyFormat(p_menuBar->closeButton());
 	}
 
-	static void ApplyFormat(spk::SafePointer<spk::IInterfaceWindow> p_window)
-    {
-        p_window->setCornerSize({4, 4});
-        p_window->setMenuHeight(24.f);
+	static void ApplyFormat(spk::SafePointer<spk::IInterfaceWindow> p_interfaceWindow)
+	{
+        ApplyFormat(p_interfaceWindow->menuBar());
 
-    	ApplyFormat(p_window->backgroundFrame());
-
-        ApplyFormat(p_window->menuBar());
-    }
+        ApplyFormat(p_interfaceWindow->backgroundFrame());
+        ApplyFormat(p_interfaceWindow->minimizedBackgroundFrame());
+	}
 };
 
 class PushButton : public spk::PushButton
@@ -106,150 +112,97 @@ public:
 
 class CommandPanel : public spk::CommandPanel
 {
-public:
-    using spk::CommandPanel::CommandPanel;
+private:
+	struct ButtonData
+    {
+        spk::SafePointer<spk::PushButton> button;
+        spk::PushButton::Contract         contract;
+    };
 
+    std::vector<ButtonData> _buttonContainer;
+
+	using spk::CommandPanel::addButton;
+
+public:
 	CommandPanel(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::CommandPanel(p_name, p_parent)
 	{
 
 	}
 
-    spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_name, const std::wstring& p_text) override
+    spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_name, const std::wstring& p_text, const spk::PushButton::Job& p_job)
     {
         spk::SafePointer<spk::PushButton> newButton = spk::CommandPanel::addButton(p_name, p_text);
 
-        if (newButton != nullptr)
-		{
-            WidgetAddons::ApplyFormat(newButton);
-		}
+        WidgetAddons::ApplyFormat(newButton);
+
+		_buttonContainer.emplace_back(ButtonData{
+            newButton,
+            newButton->subscribe(p_job)
+        });
+
         return newButton;
     }
 };
 
-template <typename TContentType>
-class InterfaceWindow : public spk::InterfaceWindow<TContentType>
+template<typename WidgetType>
+struct FormRow : public spk::FormLayout::Row<WidgetType>
 {
-public:
-    InterfaceWindow(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-		spk::InterfaceWindow<TContentType>(p_name, p_parent)
-    {
-        WidgetAddons::ApplyFormat(this);
-    }
+	FormRow(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+		spk::FormLayout::Row<WidgetType>(p_name, p_parent)
+	{
+		WidgetAddons::ApplyFormat(&(this->label));
+	}
 };
 
-class MessagePopupContent : public spk::Widget
+class MessageBox : public spk::MessageBox
 {
 private:
-    spk::VerticalLayout _layout;
-    std::vector<std::unique_ptr<TextLabel>> _lineLabels;
-    spk::SpacerWidget _spacer;
-    CommandPanel _commandPanel;
-
-    void _onGeometryChange() override
+	struct ButtonData
     {
-        _layout.setGeometry({0, geometry().size});
-    }
+        spk::SafePointer<spk::PushButton> button;
+        spk::PushButton::Contract         contract;
+    };
 
-    void _createLabel()
-    {
-        auto lbl = std::make_unique<TextLabel>(name() + L"/Line" + std::to_wstring(_lineLabels.size()), this);
+    std::vector<ButtonData> _instanciedButtons;
 
-        lbl->setNineSlice(nullptr);
-        lbl->setTextAlignment(spk::HorizontalAlignment::Centered, spk::VerticalAlignment::Centered);
-        lbl->activate();
-
-		_layout.removeWidget(&_spacer);
-        _layout.addWidget(lbl.get(), spk::Layout::SizePolicy::Minimum);
-        _lineLabels.emplace_back(std::move(lbl));
-		_layout.addWidget(&_spacer);
-    }
+	using spk::MessageBox::addButton;
 
 public:
-    MessagePopupContent(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-		spk::Widget(p_name, p_parent),
-        _spacer(p_name + L"/Spacer", this),
-        _commandPanel(p_name + L"/CommandPanel", this)
-    {
-        _layout.setElementPadding(0);
-
-        _layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
-
-        _commandPanel.activate();
-        _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
-    }
-
-    void setLineText(size_t p_line, const std::wstring& p_text)
-    {
-        while (p_line >= _lineLabels.size())
-        {
-            _createLabel();
-        }
-
-        _lineLabels[p_line]->setText(p_text);
-        requireGeometryUpdate();
-    }
-
-    spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_buttonName, const std::wstring& p_buttonText)
-    {
-        return _commandPanel.addButton(p_buttonName, p_buttonText);
-    }
-
-    spk::Vector2UInt minimalSize() const override
-    {
-        const uint32_t padY = _layout.elementPadding().y;
-
-        uint32_t maxWidth    = 0;
-        uint32_t totalHeight = 0;
-        uint32_t childCount  = 0;
-
-        for (const auto& lbl : _lineLabels)
-        {
-            const spk::Vector2UInt sz = lbl->minimalSize();
-            maxWidth    = std::max(maxWidth, sz.x);
-            totalHeight += sz.y;
-            ++childCount;
-        }
-
-        {
-            const spk::Vector2UInt sz = _commandPanel.minimalSize();
-            maxWidth    = std::max(maxWidth, sz.x);
-            totalHeight += sz.y;
-            ++childCount;
-        }
-
-        if (childCount > 1)
-            totalHeight += padY * (childCount - 1);
-
-        return {maxWidth, totalHeight};
-    }
-};
-
-class MessagePopup : public InterfaceWindow<MessagePopupContent>
-{
-public:
-	
-private:
-	spk::SafePointer<spk::PushButton> _closeButton;
-	spk::PushButton::Contract _closeButtonContract;
-	spk::ContractProvider::Contract _closeMenuBarContract;
-
-public:
-	MessagePopup(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) : 
-		InterfaceWindow(p_name, p_parent)
+	MessageBox(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) : 
+		spk::MessageBox(p_name, p_parent)
 	{
-		_closeMenuBarContract = subscribeTo(spk::IInterfaceWindow::Event::Close, [&](){close();});
+		WidgetAddons::ApplyFormat(this);
 
-		menuBar()->titleLabel()->setText(L"Message box");
-		_closeButton = content()->addButton(L"CloseButton", L"Close");
-		WidgetAddons::ApplyFormat(_closeButton);
+		WidgetAddons::ApplyFormat(&(textArea()));
 
-		_closeButtonContract = _closeButton->subscribe([&](){close();});
+		setMenuHeight(25);
+		setTitle(L"Unnamed message box");
 	}
 
-	void setLineText(size_t p_line, const std::wstring& p_text)
+	void setTitle(const std::wstring& p_title)
 	{
-		content()->setLineText(p_line, p_text);
-		setMinimumContentSize(content()->minimalSize());
+		menuBar()->titleLabel()->setText(p_title);
 	}
+
+	void setText(const std::wstring& p_text) override
+	{
+		spk::MessageBox::setText(p_text);
+		setMinimalWidth(commandPanel().minimalSize().x * 2);
+		parent()->requireGeometryUpdate();
+	}
+
+	spk::SafePointer<spk::PushButton> addButton(const std::wstring& p_name, const std::wstring& p_label, const spk::PushButton::Job& p_job)
+    {
+        auto newButton = commandPanel().addButton(p_name, p_label);
+
+        WidgetAddons::ApplyFormat(newButton);
+
+        _instanciedButtons.emplace_back(ButtonData{
+            newButton,
+            newButton->subscribe(p_job)
+        });
+
+        return newButton;
+    }
 };
