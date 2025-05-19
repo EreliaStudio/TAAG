@@ -165,27 +165,34 @@ public:
 	}
 };
 
-class SaveIconSelector : public spk::Widget
+class IconSelector : public spk::Widget
 {
 private:
-	spk::Vector2UInt _iconID;
+	spk::Frame _backgroundFrame;
 
 	void _onGeometryChange() override
 	{
-		setGeometry({iconPos, iconSize});
+		spk::cout << "Set to size " << geometry().size << std::endl;
+		_backgroundFrame.setGeometry(0, geometry().size);
 	}
 
 public:
-	SaveIconSelector(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-		spk::Widget(p_name, p_parent)
+	IconSelector(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+		spk::Widget(p_name, p_parent),
+		_backgroundFrame(p_name + L"/BackgroundFrame", this)
 	{
-
+		_backgroundFrame.setCornerSize(16);
+		_backgroundFrame.activate();
 	}
 
-	void selectIcon(const spk::Vector2UInt& p_iconID)
+	spk::Vector2UInt minimalSize() const override
 	{
-		_iconID = p_iconID;
-		requireGeometryUpdate();
+		return {0, 150};
+	}
+
+	spk::Vector2UInt maximalSize() const override
+	{
+		return {std::numeric_limits<size_t>::max(), 250};
 	}
 };
 
@@ -224,7 +231,6 @@ private:
 
             _layout.addRow(_nameRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
             _layout.addRow(_seedRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
-            _layout.addRow(_iconRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
         }
 
         void clear()
@@ -235,6 +241,11 @@ private:
 
         std::wstring seed() const { return _seedRow.field.text(); }
         std::wstring worldName() const { return _nameRow.field.text(); }
+
+		spk::Vector2UInt minimalSize() const override
+		{
+			return (_layout.minimalSize());
+		}
     };
 
     Context::Instanciator _contextInstanciator;
@@ -245,7 +256,9 @@ private:
     Content _content;
 
     spk::SpacerWidget _spacer;
-	
+
+	IconSelector _iconSelector;
+
     RequestMessageBox _alreadyExistMessageBox;
     InformationMessageBox  _genericMessageBox;
 
@@ -317,8 +330,11 @@ public:
 		}),
         _genericMessageBox(p_name + L"/GenericMessageBox", this),
         _alreadyExistMessageBox(p_name + L"/AlreadyExistMessageBox", this),
-    	_spacer(p_name + L"/Spacer", this)
+    	_spacer(p_name + L"/Spacer", this),
+		_iconSelector(p_name + L"/IconSelector", this)
     {
+		_layout.setElementPadding({10, 10});
+
         _onActivationContract = addActivationCallback([&]
         {
             _content.clear();
@@ -339,7 +355,11 @@ public:
 		_genericMessageBox.setLayer(100);
 		_genericMessageBox.setMinimalWidth(0);
 
-        _layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
+		_iconSelector.activate();
+
+        _layout.addWidget(&_content, spk::Layout::SizePolicy::Minimum);
+		_layout.addWidget(&_iconSelector, spk::Layout::SizePolicy::Maximum);
+        _layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
         _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
     }
 };
