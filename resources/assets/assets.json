@@ -27,6 +27,22 @@
 			}
 		},
 		{
+			"Name":"selectedNineSlice",
+			"Path":"resources/assets/textures/selectedNineSlice.png",
+			"Size":{
+				"x":3,
+				"y":3
+			}
+		},
+		{
+			"Name":"selectedNineSlice_hover",
+			"Path":"resources/assets/textures/selectedNineSlice_hover.png",
+			"Size":{
+				"x":3,
+				"y":3
+			}
+		},
+		{
 			"Name":"saveIcons",
 			"Path":"resources/assets/textures/saveIcons.png",
 			"Size":{

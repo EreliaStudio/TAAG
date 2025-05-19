@@ -168,45 +168,9 @@ public:
 class IconSelector : public spk::Widget
 {
 private:
-	class IconPushButton : public PushButton
-	{
-	private:
-		spk::SafePointer<spk::SpriteSheet> _iconset;
-		size_t _iconID;
-
-	public:
-		IconPushButton(const std::wstring& p_name, const size_t p_iconID, spk::SafePointer<spk::Widget> p_parent) :
-			PushButton(p_name, p_parent)
-		{
-			_iconset = AssetAtlas::instance()->spriteSheet(L"defaultNineSlice");
-			setText(L"");
-        	setIconset(_iconset);
-			setIconID(p_iconID);
-		}
-
-		void setIconID(size_t p_iconID)
-		{
-			_iconID = p_iconID;
-			setIcon(_iconset->sprite(p_iconID));
-		}
-
-		size_t selectedIcon() const
-		{
-			return _iconID;
-		}
-
-		void select()
-		{
-			
-		}
-	};
-
-	spk::Frame _backgroundFrame;
-
 	void _onGeometryChange() override
 	{
-		spk::cout << "Set to size " << geometry().size << std::endl;
-		_backgroundFrame.setGeometry(0, geometry().size);
+
 	}
 
 public:
@@ -216,16 +180,6 @@ public:
 	{
 		_backgroundFrame.setCornerSize(16);
 		_backgroundFrame.activate();
-	}
-
-	spk::Vector2UInt minimalSize() const override
-	{
-		return {0, 150};
-	}
-
-	spk::Vector2UInt maximalSize() const override
-	{
-		return {std::numeric_limits<size_t>::max(), 250};
 	}
 };
 
