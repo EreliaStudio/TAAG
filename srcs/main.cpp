@@ -194,7 +194,12 @@ private:
 		{
 			return _iconID;
 		}
-	}
+
+		void select()
+		{
+			
+		}
+	};
 
 	spk::Frame _backgroundFrame;
 
