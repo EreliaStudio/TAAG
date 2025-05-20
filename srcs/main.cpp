@@ -165,21 +165,141 @@ public:
 	}
 };
 
+class IconRenderer : public spk::Widget
+{
+private:
+	spk::NineSliceRenderer _frameRenderer;
+	spk::Vector2Int _cornerSize;
+
+	spk::TextureRenderer _iconRenderer;
+	size_t _icon;
+
+	void _onGeometryChange() override
+	{
+		_frameRenderer.clear();
+		_frameRenderer.prepare(geometry(), layer(), _cornerSize);
+		_frameRenderer.validate();
+		
+		_iconRenderer.clear();
+		auto spriteSheet = _iconRenderer.texture().downCast<const spk::SpriteSheet>();
+		_iconRenderer.prepare(geometry().shrink(_cornerSize), spriteSheet->sprite(_icon), layer() + 0.0001f);
+		_iconRenderer.validate();
+	}
+
+	void _onPaintEvent(spk::PaintEvent &p_event) override
+	{
+		_frameRenderer.render();
+		_iconRenderer.render();
+	}
+
+public:
+	IconRenderer(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+		spk::Widget(p_name, p_parent)
+	{
+		setCornerSize({10, 10});
+		setIcon(0);
+	}
+
+	void setNineSlice(const spk::SafePointer<const spk::SpriteSheet> &p_spriteSheet)
+	{
+		_frameRenderer.setSpriteSheet(p_spriteSheet);
+	}
+
+	spk::SafePointer<const spk::SpriteSheet> nineslice() const
+	{
+		return _frameRenderer.spriteSheet();
+	}
+
+	void setCornerSize(const spk::Vector2Int& p_size)
+	{
+		_cornerSize = p_size;
+		requireGeometryUpdate();
+	}
+
+	const spk::Vector2Int &cornerSize() const
+	{
+		return _cornerSize;
+	}
+
+	void setIconset(spk::SafePointer<spk::SpriteSheet> p_iconset)
+	{
+		_iconRenderer.setTexture(p_iconset);
+	}
+
+	spk::SafePointer<const spk::SpriteSheet> iconset() const
+	{
+		return _iconRenderer.texture().downCast<const spk::SpriteSheet>();
+	}
+
+	void setIcon(size_t p_icon)
+	{
+		_icon = p_icon;
+		requireGeometryUpdate();
+	}
+
+	const size_t &icon() const
+	{
+		return _icon;
+	}
+};
+
 class IconSelector : public spk::Widget
 {
 private:
-	void _onGeometryChange() override
-	{
+	spk::HorizontalLayout _layout;
 
+	PushButton _incrementButton;
+	IconRenderer _iconRenderer;
+	PushButton _decrementButton;
+
+	void _onGeometryChange()
+	{
+		_layout.setGeometry({0, geometry().size});
 	}
 
 public:
 	IconSelector(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Widget(p_name, p_parent),
-		_backgroundFrame(p_name + L"/BackgroundFrame", this)
+		_incrementButton(p_name + L"/IncrementButton", this),
+		_iconRenderer(p_name + L"/IconRenderer", this),
+		_decrementButton(p_name + L"/DecrementButton", this)
 	{
-		_backgroundFrame.setCornerSize(16);
-		_backgroundFrame.activate();
+		_decrementButton.setIconset(spk::Widget::defaultIconset());
+		_decrementButton.setIcon(spk::Widget::defaultIconset()->sprite(6));
+		_decrementButton.activate();
+		
+		_iconRenderer.setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
+		_iconRenderer.setIconset(AssetAtlas::instance()->spriteSheet(L"saveIcons"));
+		_iconRenderer.setIcon(0);
+		_iconRenderer.activate();
+
+		_incrementButton.setIconset(spk::Widget::defaultIconset());
+		_incrementButton.setIcon(spk::Widget::defaultIconset()->sprite(7));
+		_incrementButton.activate();
+
+		_layout.addWidget(&_incrementButton, spk::Layout::SizePolicy::Minimum);
+		_layout.addWidget(&_iconRenderer, spk::Layout::SizePolicy::HorizontalExtend);
+		_layout.addWidget(&_decrementButton, spk::Layout::SizePolicy::Minimum);
+	}
+
+	void setIconset(spk::SafePointer<spk::SpriteSheet> p_iconset)
+	{
+		_iconRenderer.setIconset(p_iconset);
+	}
+	
+	spk::SafePointer<const spk::SpriteSheet> iconset() const
+	{
+		return _iconRenderer.iconset();
+	}
+
+	void setIcon(size_t p_icon)
+	{
+		_iconRenderer.setIcon(p_icon);
+	}
+
+	const size_t &icon() const
+	{
+		return _iconRenderer.icon();
 	}
 };
 
@@ -190,11 +310,13 @@ private:
     {
         using NameRow = FormRow<TextEdit>;
         using SeedRow = FormRow<TextEdit>;
+        using IconRow = FormRow<IconSelector>;
 
         spk::FormLayout _layout;
 
         NameRow _nameRow;
         SeedRow _seedRow;
+		IconRow _iconRow;
 
         void _onGeometryChange() override
         {
@@ -204,7 +326,8 @@ private:
         Content(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
             spk::Widget(p_name, p_parent),
             _nameRow(p_name + L"/Name", this),
-            _seedRow(p_name + L"/Seed", this)
+            _seedRow(p_name + L"/Seed", this),
+			_iconRow(p_name + L"/Icon", this)
         {
             _layout.setElementPadding({10, 10});
 
@@ -216,8 +339,13 @@ private:
             _seedRow.field.setPlaceholder(L"000000000");
             _seedRow.activate();
 
+            _iconRow.label.setText(L"Icon:");
+            _iconRow.field.setIcon(0);
+            _iconRow.activate();
+
             _layout.addRow(_nameRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
             _layout.addRow(_seedRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
+            _layout.addRow(_iconRow, spk::Layout::SizePolicy::Minimum, spk::Layout::SizePolicy::HorizontalExtend);
         }
 
         void clear()
