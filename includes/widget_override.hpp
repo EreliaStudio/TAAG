@@ -40,6 +40,7 @@ public:
     static void ApplyFormat(spk::SafePointer<spk::TextLabel> p_widget)
     {
         p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
+		p_widget->setTextAlignment(spk::HorizontalAlignment::Centered, spk::VerticalAlignment::Centered);
         p_widget->setFont(AssetAtlas::instance()->font(L"defaultFont"));
         p_widget->setFontColor(defaultFontColor, defaultOutlineColor);
         p_widget->setFontSize(defaultFontSize);
@@ -116,6 +117,18 @@ private:
 public:
 	TextEdit(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::TextEdit(p_name, p_parent)
+	{
+		WidgetAddons::ApplyFormat(this);
+	}
+};
+
+class Frame : public spk::Frame
+{
+private:
+
+public:
+	Frame(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+		spk::Frame(p_name, p_parent)
 	{
 		WidgetAddons::ApplyFormat(this);
 	}

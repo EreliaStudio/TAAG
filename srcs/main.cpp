@@ -420,7 +420,7 @@ private:
 
     void _onGeometryChange() override
     {
-		WidgetAddons::centerInParent(&_layout, geometry().size / 1.2f, geometry());
+		WidgetAddons::centerInParent(&_layout, geometry().size - 100, geometry());
 		WidgetAddons::centerInParent(&_alreadyExistMessageBox, _alreadyExistMessageBox.minimalSize(), geometry());
 		WidgetAddons::centerInParent(&_genericMessageBox, _genericMessageBox.minimalSize(), geometry());
     }
@@ -518,13 +518,90 @@ public:
 class LoadGameMenu : public spk::Screen
 {
 private:
-	struct Content : public spk::ScrollableWidget
+	struct SaveEntry
+	{
+		std::filesystem::path folder;
+		std::filesystem::file_time_type time;
+	};
+
+	struct FileSelector : public spk::Widget
 	{
 	private:
+		Frame _backgroundFrame;
+		IconRenderer _iconRenderer;
+		TextLabel _nameLabel;
+		TextLabel _dateLabel;
+		
+		SaveEntry _saveEntry;
 
 		void _onGeometryChange()
 		{
+			_backgroundFrame.setGeometry({0, geometry().size});
 
+			spk::Vector2UInt iconRendererSize = std::min(geometry().height - _backgroundFrame.cornerSize().y * 2, 64u);
+			spk::Vector2Int iconRendererAnchor = spk::Vector2UInt(_backgroundFrame.cornerSize().x, (geometry().size.y - iconRendererSize.y) / 2);
+			_iconRenderer.setGeometry(iconRendererAnchor, iconRendererSize);
+
+			spk::Vector2UInt nameLabelSize = spk::Vector2UInt(geometry().size.x - iconRendererSize.x - _backgroundFrame.cornerSize().x * 2 - 10, (geometry().size.y - _backgroundFrame.cornerSize().y * 2 - 10) / 2);
+			spk::Vector2Int nameLabelAnchor = spk::Vector2UInt(_backgroundFrame.cornerSize().x + iconRendererSize.x + 10, _backgroundFrame.cornerSize().y);
+			_nameLabel.setGeometry(nameLabelAnchor, nameLabelSize);
+
+			spk::Vector2UInt dateLabelSize = nameLabelSize;
+			spk::Vector2Int dateLabelAnchor = nameLabelAnchor + spk::Vector2UInt(0, nameLabelSize.y + 10);
+			_dateLabel.setGeometry(dateLabelAnchor, dateLabelSize);
+		}
+
+	public:
+		FileSelector(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+			spk::Widget(p_name, p_parent),
+			_backgroundFrame(p_name + L"/BackgroundFrame", this),
+			_iconRenderer(p_name + L"/IconRenderer", this),
+			_nameLabel(p_name + L"/NameLabel", this),
+			_dateLabel(p_name + L"/DateLabel", this)
+		{
+			_backgroundFrame.activate();
+			_iconRenderer.activate();
+			_nameLabel.activate();
+			_dateLabel.activate();
+		}
+
+		void setFile(SaveEntry p_saveEntry)
+		{
+			_saveEntry = p_saveEntry;
+
+			spk::JSON::File saveFile(_saveEntry.folder / "save.json");
+			_nameLabel.setText(L"World name : " + saveFile[L"World name"].as<std::wstring>());
+
+			auto sysTime  = std::chrono::file_clock::to_sys(_saveEntry.time);
+			std::time_t   cTime    = std::chrono::system_clock::to_time_t(sysTime);
+
+			std::wostringstream timeStr;
+			timeStr << std::put_time(std::localtime(&cTime), L"%Y-%m-%d %H:%M:%S");
+
+			_dateLabel.setText(L"Date : " + timeStr.str());
+
+			_iconRenderer.setIconset(AssetAtlas::instance()->spriteSheet(L"saveIcons"));
+			_iconRenderer.setIcon(saveFile[L"Icon"].as<long>());
+			_iconRenderer.activate();
+		}
+	};
+
+	struct Content : public spk::ScrollableWidget
+	{
+	private:
+		size_t _width = 100;
+		std::vector<std::unique_ptr<FileSelector>> _fileSelectors;
+
+		void _onGeometryChange()
+		{
+			spk::Vector2UInt fileSelectorSize = spk::Vector2UInt(geometry().size.x, 100u);
+			spk::Vector2UInt fileSelectorAnchor = 0;
+
+			for (auto& fileSelector : _fileSelectors)
+			{
+				fileSelector->setGeometry(fileSelectorAnchor, fileSelectorSize);
+				fileSelectorAnchor += spk::Vector2UInt(0, fileSelectorSize.y + 10);
+			}
 		}
 
 	public:
@@ -536,11 +613,7 @@ private:
 
 		void updateSaveFileList()
 		{
-			struct SaveEntry
-			{
-				std::filesystem::path folder;
-				std::filesystem::file_time_type time;
-			};
+			_fileSelectors.clear();
 
 			std::vector<SaveEntry> saves;
 			for (const auto& folder : spk::FileUtils::listFolders("resources/saves"))
@@ -558,26 +631,27 @@ private:
 						return a.time > b.time;
 					});
 
-			spk::cout << "Save :" << std::endl;
 			for (const auto& entry : saves)
 			{
-				auto sysTime  = std::chrono::file_clock::to_sys(entry.time);
-				std::time_t   cTime    = std::chrono::system_clock::to_time_t(sysTime);
-
-				std::wostringstream timeStr;
-				timeStr << std::put_time(std::localtime(&cTime), L"%Y-%m-%d %H:%M:%S");
-
-				spk::JSON::File saveFile(entry.folder / "save.json");
-				spk::cout << L"    "
-						<< saveFile[L"World name"].as<std::wstring>()
-						<< L"  (" << timeStr.str() << L')'
-						<< std::endl;
+				_fileSelectors.emplace_back(std::make_unique<FileSelector>(name() + L"/FileSelector", this));
+				_fileSelectors.back()->setFile(entry);
+				_fileSelectors.back()->activate();
 			}
+		}
+
+		void setWidth(const size_t& p_width)
+		{
+			_width = p_width;
+			parent()->requireGeometryUpdate();
 		}
 
 		spk::Vector2UInt requiredSize() const override
 		{
-			return {100u, 100u};
+			if (_fileSelectors.empty())
+			{
+				return spk::Vector2UInt(_width, 100u);
+			}
+			return spk::Vector2UInt(_width, 100u * _fileSelectors.size() + 10u * (_fileSelectors.size() - 1));
 		}
 	};
 	
@@ -590,7 +664,10 @@ private:
 
 	void _onGeometryChange()
 	{
-		WidgetAddons::centerInParent(&_layout, geometry().size / 1.2f, geometry());
+		WidgetAddons::centerInParent(&_layout, geometry().size - 100, geometry());
+		_content.content()->setWidth(_content.geometry().size.x - 100);
+		_content.setContentSize(_content.content()->requiredSize());
+		_content.requireGeometryUpdate();		
 	}
 
 public:
@@ -606,6 +683,8 @@ public:
 			_content.content()->updateSaveFileList();
 			requireGeometryUpdate();
 		});
+
+		_layout.setElementPadding({10, 10});
 		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
 		_layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
 
