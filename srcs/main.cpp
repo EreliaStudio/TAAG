@@ -181,8 +181,10 @@ private:
 		_frameRenderer.validate();
 		
 		_iconRenderer.clear();
-		auto spriteSheet = _iconRenderer.texture().downCast<const spk::SpriteSheet>();
-		_iconRenderer.prepare(geometry().shrink(_cornerSize), spriteSheet->sprite(_icon), layer() + 0.0001f);
+		auto spriteSheet = _iconRenderer.texture().upCast<const spk::SpriteSheet>();
+		spk::Vector2UInt iconRendererSize = geometry().height - _cornerSize.y * 2;
+		spk::Vector2UInt iconRendererAnchor = geometry().anchor + (geometry().size - iconRendererSize) / 2;
+		_iconRenderer.prepare({iconRendererAnchor, iconRendererSize}, spriteSheet->sprite(_icon), layer() + 0.0001f);
 		_iconRenderer.validate();
 	}
 
@@ -228,7 +230,7 @@ public:
 
 	spk::SafePointer<const spk::SpriteSheet> iconset() const
 	{
-		return _iconRenderer.texture().downCast<const spk::SpriteSheet>();
+		return _iconRenderer.texture().upCast<const spk::SpriteSheet>();
 	}
 
 	void setIcon(size_t p_icon)
@@ -254,6 +256,9 @@ private:
 
 	void _onGeometryChange()
 	{
+		spk::Vector2UInt buttonSize = geometry().height;
+		_incrementButton.setMinimalSize(buttonSize);
+		_decrementButton.setMinimalSize(buttonSize);
 		_layout.setGeometry({0, geometry().size});
 	}
 
@@ -265,7 +270,7 @@ public:
 		_decrementButton(p_name + L"/DecrementButton", this)
 	{
 		_decrementButton.setIconset(spk::Widget::defaultIconset());
-		_decrementButton.setIcon(spk::Widget::defaultIconset()->sprite(6));
+		_decrementButton.setIcon(spk::Widget::defaultIconset()->sprite(7));
 		_decrementButton.activate();
 		
 		_iconRenderer.setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
@@ -274,9 +279,10 @@ public:
 		_iconRenderer.activate();
 
 		_incrementButton.setIconset(spk::Widget::defaultIconset());
-		_incrementButton.setIcon(spk::Widget::defaultIconset()->sprite(7));
+		_incrementButton.setIcon(spk::Widget::defaultIconset()->sprite(6));
 		_incrementButton.activate();
 
+		_layout.setElementPadding({10, 10});
 		_layout.addWidget(&_incrementButton, spk::Layout::SizePolicy::Minimum);
 		_layout.addWidget(&_iconRenderer, spk::Layout::SizePolicy::HorizontalExtend);
 		_layout.addWidget(&_decrementButton, spk::Layout::SizePolicy::Minimum);
@@ -301,6 +307,18 @@ public:
 	{
 		return _iconRenderer.icon();
 	}
+
+	// spk::Vector2UInt minimalSize() const override
+	// {
+	// 	spk::Vector2UInt decrementMinimalSize = _decrementButton.minimalSize();
+	// 	spk::Vector2UInt incrementMinimalSize = _incrementButton.minimalSize();
+	// 	spk::Vector2UInt iconMinimalSize = _iconRenderer.minimalSize();
+
+	// 	return spk::Vector2UInt(
+	// 		decrementMinimalSize.x + _layout.elementPadding().x + incrementMinimalSize.x + _layout.elementPadding().x + iconMinimalSize.x,
+	// 		std::max({decrementMinimalSize.y, incrementMinimalSize.y, iconMinimalSize.y})
+	// 	);
+	// }
 };
 
 class NewGameMenu : public spk::Screen
@@ -371,8 +389,6 @@ private:
     Content _content;
 
     spk::SpacerWidget _spacer;
-
-	IconSelector _iconSelector;
 
     RequestMessageBox _alreadyExistMessageBox;
     InformationMessageBox  _genericMessageBox;
@@ -445,8 +461,7 @@ public:
 		}),
         _genericMessageBox(p_name + L"/GenericMessageBox", this),
         _alreadyExistMessageBox(p_name + L"/AlreadyExistMessageBox", this),
-    	_spacer(p_name + L"/Spacer", this),
-		_iconSelector(p_name + L"/IconSelector", this)
+    	_spacer(p_name + L"/Spacer", this)
     {
 		_layout.setElementPadding({10, 10});
 
@@ -470,10 +485,7 @@ public:
 		_genericMessageBox.setLayer(100);
 		_genericMessageBox.setMinimalWidth(0);
 
-		_iconSelector.activate();
-
         _layout.addWidget(&_content, spk::Layout::SizePolicy::Minimum);
-		_layout.addWidget(&_iconSelector, spk::Layout::SizePolicy::Maximum);
         _layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
         _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
     }
