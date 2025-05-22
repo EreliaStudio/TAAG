@@ -30,6 +30,7 @@ struct World
 	
 	std::wstring name;
 	long seed;
+	size_t icon;
 
 	void load(const std::filesystem::path& p_folderPath)
 	{
@@ -37,6 +38,7 @@ struct World
 
 		name = inputFile[L"World name"].as<std::wstring>();
 		seed = inputFile[L"Seed"].as<long>();
+		icon = inputFile[L"Icon"].as<long>();
 	}
 
 	void save(const std::filesystem::path& p_folderPath)
@@ -45,6 +47,7 @@ struct World
 
 		outputFile.root().addAttribute(L"World name") = name;
 		outputFile.root().addAttribute(L"Seed") = seed;
+		outputFile.root().addAttribute(L"Icon") = static_cast<long>(icon);
 
 		outputFile.save(p_folderPath / "save.json");
 	}
@@ -251,8 +254,10 @@ private:
 	spk::HorizontalLayout _layout;
 
 	PushButton _incrementButton;
+	PushButton::Contract _incrementButtonContract;
 	IconRenderer _iconRenderer;
 	PushButton _decrementButton;
+	PushButton::Contract _decrementButtonContract;
 
 	void _onGeometryChange()
 	{
@@ -270,7 +275,15 @@ public:
 		_decrementButton(p_name + L"/DecrementButton", this)
 	{
 		_decrementButton.setIconset(spk::Widget::defaultIconset());
-		_decrementButton.setIcon(spk::Widget::defaultIconset()->sprite(7));
+		_decrementButton.setIcon(spk::Widget::defaultIconset()->sprite(6));
+		_decrementButtonContract = _decrementButton.subscribe([&](){
+			size_t icon = _iconRenderer.icon();
+			if (icon == 0)
+				icon = _iconRenderer.iconset()->sprites().size() - 1;
+			else
+				icon--;
+			_iconRenderer.setIcon(icon);
+		});
 		_decrementButton.activate();
 		
 		_iconRenderer.setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));
@@ -279,13 +292,21 @@ public:
 		_iconRenderer.activate();
 
 		_incrementButton.setIconset(spk::Widget::defaultIconset());
-		_incrementButton.setIcon(spk::Widget::defaultIconset()->sprite(6));
+		_incrementButton.setIcon(spk::Widget::defaultIconset()->sprite(7));
+		_incrementButtonContract = _incrementButton.subscribe([&](){
+			size_t icon = _iconRenderer.icon();
+			if (icon == _iconRenderer.iconset()->sprites().size() - 1)
+				icon = 0;
+			else
+				icon++;
+			_iconRenderer.setIcon(icon);
+		});
 		_incrementButton.activate();
 
 		_layout.setElementPadding({10, 10});
-		_layout.addWidget(&_incrementButton, spk::Layout::SizePolicy::Minimum);
-		_layout.addWidget(&_iconRenderer, spk::Layout::SizePolicy::HorizontalExtend);
 		_layout.addWidget(&_decrementButton, spk::Layout::SizePolicy::Minimum);
+		_layout.addWidget(&_iconRenderer, spk::Layout::SizePolicy::HorizontalExtend);
+		_layout.addWidget(&_incrementButton, spk::Layout::SizePolicy::Minimum);
 	}
 
 	void setIconset(spk::SafePointer<spk::SpriteSheet> p_iconset)
@@ -308,17 +329,17 @@ public:
 		return _iconRenderer.icon();
 	}
 
-	// spk::Vector2UInt minimalSize() const override
-	// {
-	// 	spk::Vector2UInt decrementMinimalSize = _decrementButton.minimalSize();
-	// 	spk::Vector2UInt incrementMinimalSize = _incrementButton.minimalSize();
-	// 	spk::Vector2UInt iconMinimalSize = _iconRenderer.minimalSize();
+	spk::Vector2UInt minimalSize() const override
+	{
+		spk::Vector2UInt decrementMinimalSize = _decrementButton.minimalSize();
+		spk::Vector2UInt incrementMinimalSize = _incrementButton.minimalSize();
+		spk::Vector2UInt iconMinimalSize = _iconRenderer.minimalSize();
 
-	// 	return spk::Vector2UInt(
-	// 		decrementMinimalSize.x + _layout.elementPadding().x + incrementMinimalSize.x + _layout.elementPadding().x + iconMinimalSize.x,
-	// 		std::max({decrementMinimalSize.y, incrementMinimalSize.y, iconMinimalSize.y})
-	// 	);
-	// }
+		return spk::Vector2UInt(
+			decrementMinimalSize.x + _layout.elementPadding().x + incrementMinimalSize.x + _layout.elementPadding().x + iconMinimalSize.x,
+			std::max({decrementMinimalSize.y, incrementMinimalSize.y, iconMinimalSize.y})
+		);
+	}
 };
 
 class NewGameMenu : public spk::Screen
@@ -370,10 +391,12 @@ private:
         {
             _nameRow.field.setText(L"");
             _seedRow.field.setText(SeedGenerator::generateRandomSeed(12));
+			_iconRow.field.setIcon(0);
         }
 
         std::wstring seed() const { return _seedRow.field.text(); }
         std::wstring worldName() const { return _nameRow.field.text(); }
+        size_t iconID() const { return _iconRow.field.icon(); }
 
 		spk::Vector2UInt minimalSize() const override
 		{
@@ -422,6 +445,7 @@ private:
 
         Context::instance()->world.name = _content.worldName();
         Context::instance()->world.seed = SeedGenerator::encodeSeed(_content.seed());
+        Context::instance()->world.icon = _content.iconID();
 		
         Context::instance()->world.save(gameSaveFolder);
 
@@ -512,14 +536,43 @@ private:
 
 		void updateSaveFileList()
 		{
-			std::vector<std::filesystem::path> saveFolders = spk::FileUtils::listFolders("resources/saves");
-
-			spk::cout << "Save : " << std::endl;
-			for (const auto& folder : saveFolders)
+			struct SaveEntry
 			{
-				spk::JSON::File saveFile = spk::JSON::File(folder / "save.json");
+				std::filesystem::path folder;
+				std::filesystem::file_time_type time;
+			};
 
-				spk::cout << "    " << saveFile[L"World name"].as<std::wstring>() << std::endl;
+			std::vector<SaveEntry> saves;
+			for (const auto& folder : spk::FileUtils::listFolders("resources/saves"))
+			{
+				const auto savePath = folder / "save.json";
+				if (std::filesystem::exists(savePath))
+				{
+					saves.push_back({ folder, std::filesystem::last_write_time(savePath) });
+				}
+			}
+
+			std::sort(saves.begin(), saves.end(),
+					[](const SaveEntry& a, const SaveEntry& b)
+					{
+						return a.time < b.time;
+					});
+
+			spk::cout << "Save :" << std::endl;
+			for (const auto& entry : saves)
+			{
+				auto sysTime  = std::chrono::file_clock::to_sys(entry.time);
+				std::time_t   cTime    = std::chrono::system_clock::to_time_t(sysTime);
+
+				std::wostringstream timeStr;
+				timeStr << std::put_time(std::localtime(&cTime), L"%Y-%m-%d %H:%M:%S");
+
+				// ---------- read world name & print ----------
+				spk::JSON::File saveFile(entry.folder / "save.json");
+				spk::cout << L"    "
+						<< saveFile[L"World name"].as<std::wstring>()
+						<< L"  (" << timeStr.str() << L')'
+						<< std::endl;
 			}
 		}
 
