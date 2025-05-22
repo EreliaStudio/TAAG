@@ -555,7 +555,7 @@ private:
 			std::sort(saves.begin(), saves.end(),
 					[](const SaveEntry& a, const SaveEntry& b)
 					{
-						return a.time < b.time;
+						return a.time > b.time;
 					});
 
 			spk::cout << "Save :" << std::endl;
@@ -567,7 +567,6 @@ private:
 				std::wostringstream timeStr;
 				timeStr << std::put_time(std::localtime(&cTime), L"%Y-%m-%d %H:%M:%S");
 
-				// ---------- read world name & print ----------
 				spk::JSON::File saveFile(entry.folder / "save.json");
 				spk::cout << L"    "
 						<< saveFile[L"World name"].as<std::wstring>()
