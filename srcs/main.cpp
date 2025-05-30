@@ -309,6 +309,12 @@ public:
 		_layout.addWidget(&_incrementButton, spk::Layout::SizePolicy::Minimum);
 	}
 
+	void setupButtonSize(const spk::Vector2UInt &p_size)
+	{
+		_incrementButton.setMinimalSize(p_size);
+		_decrementButton.setMinimalSize(p_size);
+	}
+
 	void setIconset(spk::SafePointer<spk::SpriteSheet> p_iconset)
 	{
 		_iconRenderer.setIconset(p_iconset);
@@ -335,10 +341,12 @@ public:
 		spk::Vector2UInt incrementMinimalSize = _incrementButton.minimalSize();
 		spk::Vector2UInt iconMinimalSize = _iconRenderer.minimalSize();
 
-		return spk::Vector2UInt(
+		spk::Vector2UInt result = spk::Vector2UInt(
 			decrementMinimalSize.x + _layout.elementPadding().x + incrementMinimalSize.x + _layout.elementPadding().x + iconMinimalSize.x,
 			std::max({decrementMinimalSize.y, incrementMinimalSize.y, iconMinimalSize.y})
 		);
+
+		return result;
 	}
 };
 
@@ -359,6 +367,7 @@ private:
 
         void _onGeometryChange() override
         {
+			_iconRow.field.setupButtonSize({16, 16});
             _layout.setGeometry({0, geometry().size});
         }
 
@@ -410,13 +419,11 @@ private:
     spk::Widget::Contract _onActivationContract;
 
     Content _content;
-
     spk::SpacerWidget _spacer;
+    CommandPanel _commandPanel;
 
     RequestMessageBox _alreadyExistMessageBox;
     InformationMessageBox  _genericMessageBox;
-
-    CommandPanel _commandPanel;
 
     void _onGeometryChange() override
     {
@@ -511,7 +518,7 @@ public:
 
         _layout.addWidget(&_content, spk::Layout::SizePolicy::Minimum);
         _layout.addWidget(&_spacer, spk::Layout::SizePolicy::Extend);
-        _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
+        _layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum); 
     }
 };
 
@@ -565,6 +572,11 @@ private:
 			_dateLabel.activate();
 		}
 
+		void setNineSlice(const spk::SafePointer<const spk::SpriteSheet> &p_spriteSheet)
+		{
+			_backgroundFrame.setNineSlice(p_spriteSheet);
+		}
+
 		void setFile(SaveEntry p_saveEntry)
 		{
 			_saveEntry = p_saveEntry;
@@ -584,31 +596,37 @@ private:
 			_iconRenderer.setIcon(saveFile[L"Icon"].as<long>());
 			_iconRenderer.activate();
 		}
+
+		spk::Vector2UInt minimalSize() const override
+		{
+			spk::Vector2UInt iconRendererMinimalSize = _iconRenderer.minimalSize();
+			spk::Vector2UInt nameLabelMinimalSize = _nameLabel.minimalSize();
+			spk::Vector2UInt dateLabelMinimalSize = _dateLabel.minimalSize();
+
+			return spk::Vector2UInt(
+				iconRendererMinimalSize.x + nameLabelMinimalSize.x + dateLabelMinimalSize.x + 10 * 3 + _backgroundFrame.cornerSize().x * 2,
+				std::max({iconRendererMinimalSize.y, nameLabelMinimalSize.y, dateLabelMinimalSize.y}) + _backgroundFrame.cornerSize().y * 2 + 10 * 2
+			);
+		}
 	};
 
-	struct Content : public spk::ScrollableWidget
+	struct Content : public spk::Widget
 	{
 	private:
 		size_t _width = 100;
+		spk::VerticalLayout _layout;
 		std::vector<std::unique_ptr<FileSelector>> _fileSelectors;
 
 		void _onGeometryChange()
 		{
-			spk::Vector2UInt fileSelectorSize = spk::Vector2UInt(geometry().size.x, 100u);
-			spk::Vector2UInt fileSelectorAnchor = 0;
-
-			for (auto& fileSelector : _fileSelectors)
-			{
-				fileSelector->setGeometry(fileSelectorAnchor, fileSelectorSize);
-				fileSelectorAnchor += spk::Vector2UInt(0, fileSelectorSize.y + 10);
-			}
+			_layout.setGeometry({0, geometry().size});
 		}
-
+ 
 	public:
 		Content(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-			spk::ScrollableWidget(p_name, p_parent)
+			spk::Widget(p_name, p_parent)
 		{
-
+			_layout.setElementPadding({10, 10});
 		}
 
 		void updateSaveFileList()
@@ -631,11 +649,20 @@ private:
 						return a.time > b.time;
 					});
 
+			_layout.clear(); 
+
 			for (const auto& entry : saves)
 			{
-				_fileSelectors.emplace_back(std::make_unique<FileSelector>(name() + L"/FileSelector", this));
+				_fileSelectors.emplace_back(std::make_unique<FileSelector>(name() + L"/FileSelector[" + std::to_wstring(_fileSelectors.size()) + L"]", this));
+				if ((_fileSelectors.size() % 2) == 0)
+				{
+					_fileSelectors.back()->setNineSlice(AssetAtlas::instance()->spriteSheet(L"selectedNineSlice_hover"));
+				}
+				
 				_fileSelectors.back()->setFile(entry);
 				_fileSelectors.back()->activate();
+			
+				_layout.addWidget(_fileSelectors.back().get(), spk::Layout::SizePolicy::HorizontalExtend);
 			}
 		}
 
@@ -645,13 +672,13 @@ private:
 			parent()->requireGeometryUpdate();
 		}
 
-		spk::Vector2UInt requiredSize() const override
+		spk::Vector2UInt minimalSize() const override
 		{
 			if (_fileSelectors.empty())
 			{
-				return spk::Vector2UInt(_width, 100u);
+				return spk::Vector2UInt(_width, 0);
 			}
-			return spk::Vector2UInt(_width, 100u * _fileSelectors.size() + 10u * (_fileSelectors.size() - 1));
+			return spk::Vector2UInt(_width, 100 * _fileSelectors.size() + 10u * (_fileSelectors.size() - 1));
 		}
 	};
 	
@@ -659,36 +686,37 @@ private:
 
 	spk::VerticalLayout _layout;
 
-	spk::ScrollArea<Content> _content;
+	spk::ScrollArea<Content> _scrollArea;
     CommandPanel _commandPanel;
 
 	void _onGeometryChange()
 	{
-		WidgetAddons::centerInParent(&_layout, geometry().size - 100, geometry());
-		_content.content()->setWidth(_content.geometry().size.x - 100);
-		_content.setContentSize(_content.content()->requiredSize());
-		_content.requireGeometryUpdate();		
+		_scrollArea.content().upCast<Content>()->setWidth(geometry().size.x - 100);
+		WidgetAddons::centerInParent(&_layout, geometry().size - 100, geometry());	
 	}
 
 public:
 	LoadGameMenu(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 		spk::Screen(p_name, p_parent),
-		_content(p_name + L"/Content", this),
+		_scrollArea(p_name + L"/ScrollArea", this),
         _commandPanel(p_name + L"/CommandPanel", this, {
 			{L"Cancel",  [&]{ EventDispatcher::emit(Event::EnterMainMenu); }}
 		})
 	{
 		_onActivationContract = addActivationCallback([&]
 		{
-			_content.content()->updateSaveFileList();
+			_scrollArea.content().upCast<Content>()->updateSaveFileList();
 			requireGeometryUpdate();
 		});
 
+		_scrollArea.setScrollBarVisible(spk::ScrollBar::Orientation::Vertical, false);
+		_scrollArea.setScrollBarVisible(spk::ScrollBar::Orientation::Horizontal, false);
+
 		_layout.setElementPadding({10, 10});
-		_layout.addWidget(&_content, spk::Layout::SizePolicy::Extend);
+		_layout.addWidget(&_scrollArea, spk::Layout::SizePolicy::Extend);
 		_layout.addWidget(&_commandPanel, spk::Layout::SizePolicy::Minimum);
 
-		_content.activate();
+		_scrollArea.activate();
 		_commandPanel.activate();
 	}
 };
@@ -743,24 +771,28 @@ public:
 	}
 };
 
+
 int main()
 {
-	spk::GraphicalApplication app;
-
-	spk::SafePointer<spk::Window> win = app.createWindow(L"TAAG", {{0, 0}, {800, 600}});
-
-	EventDispatcher::instanciate();
-
-	MainWidget mainWidget(L"MainWidget", win->widget());
-	mainWidget.setGeometry(win->geometry());
-	mainWidget.activate();
-
-	EventDispatcher::Contract exitContract = EventDispatcher::subscribe(Event::ExitGame, [&app]()
+	int error = 0;
 	{
-		app.quit(0);
-	});
+		spk::GraphicalApplication app;
 
-	EventDispatcher::emit(Event::EnterMainMenu);
+		spk::SafePointer<spk::Window> win = app.createWindow(L"TAAG", {{0, 0}, {800, 600}});
 
-	return (app.run());
+		MainWidget mainWidget(L"MainWidget", win->widget());
+		mainWidget.setGeometry(win->geometry());
+		mainWidget.activate();
+
+		EventDispatcher::Contract exitContract = EventDispatcher::subscribe(Event::ExitGame, [&app]()
+		{
+			app.quit(0);
+		});
+
+		EventDispatcher::emit(Event::EnterMainMenu);
+
+		error = app.run();
+	}
+
+	return (error);
 }

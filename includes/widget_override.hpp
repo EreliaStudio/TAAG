@@ -15,10 +15,10 @@ public:
 	static inline spk::Color defaultOutlineColor = spk::Color::black;
 	
 	template<typename T>
-	static void centerInParent(T* p_object, const spk::Vector2UInt& p_size, const spk::Geometry2D& p_geometry)
+	static void centerInParent(T* p_object, const spk::Vector2UInt& p_childSize, const spk::Geometry2D& p_parentGeometry)
 	{
-		spk::Vector2Int widgetAnchor = (p_geometry.size - p_size) / 2;
-		p_object->setGeometry({widgetAnchor, p_size});
+		spk::Vector2Int widgetAnchor = (p_parentGeometry.size - p_childSize) / 2;
+		p_object->setGeometry({widgetAnchor, p_childSize});
 	}
 
 	static void ApplyFormat(spk::SafePointer<spk::Frame> p_widget)
