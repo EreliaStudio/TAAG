@@ -1,10 +1,4 @@
 {
-	"Images":[
-		{
-			"Name":"connectionMenuBackground",
-			"Path":"resources/assets/textures/connectionMenuBackground.png",
-		}
-	],
 	"SpriteSheets":[
 		{
 			"Name":"defaultNineSlice",
@@ -31,19 +25,11 @@
 			}
 		},
 		{
-			"Name":"selectedNineSlice",
-			"Path":"resources/assets/textures/selectedNineSlice.png",
+			"Name":"SpinLoop",
+			"Path":"resources/assets/textures/spinLoop.png",
 			"Size":{
-				"x":3,
-				"y":3
-			}
-		},
-		{
-			"Name":"selectedNineSlice_hover",
-			"Path":"resources/assets/textures/selectedNineSlice_hover.png",
-			"Size":{
-				"x":3,
-				"y":3
+				"x":8,
+				"y":1
 			}
 		}
 	],

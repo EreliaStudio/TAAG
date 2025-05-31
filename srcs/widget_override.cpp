@@ -31,6 +31,12 @@ TextEdit::TextEdit(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_p
 	WidgetAddons::ApplyFormat(this);
 }
 
+TextArea::TextArea(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
+	spk::TextArea(p_name, p_parent)
+{
+	WidgetAddons::ApplyFormat(this);
+}
+
 Frame::Frame(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 	spk::Frame(p_name, p_parent)
 {

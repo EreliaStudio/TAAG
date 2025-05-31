@@ -32,6 +32,14 @@ public:
 	TextEdit(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent);
 };
 
+class TextArea : public spk::TextArea
+{
+private:
+
+public:
+	TextArea(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent);
+};
+
 class Frame : public spk::Frame
 {
 private:
