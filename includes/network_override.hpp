@@ -6,7 +6,13 @@
 
 enum class MessageType
 {
-
+	ChunkRequest = 0,
+	ChunkAwnser = 1,
+	ChunkUpdate = 2,
+	ActorRequest = 3,
+	ActorAwnser = 4,
+	ActorUpdate = 5,
+	PlayerIDAssignation = 6
 };
 
 class Client : public spk::Client
