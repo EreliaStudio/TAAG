@@ -2,14 +2,14 @@
 
 #include <sparkle.hpp>
 
-#include "context.hpp"
+#include "structure/context.hpp"
 
 #include "event.hpp"
 
-#include "network_widget.hpp"
+#include "network/network_widget.hpp"
 
-#include "initialization_screen.hpp"
-#include "game_screen.hpp"
+#include "screen/initialization_screen.hpp"
+#include "screen/game_screen.hpp"
 
 class MainWidget : public spk::Widget
 {
