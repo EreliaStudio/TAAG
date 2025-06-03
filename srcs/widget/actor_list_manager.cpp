@@ -23,19 +23,9 @@ void ActorListManager::_parseActorData(const spk::Message& p_message)
 	{
 		auto actorId = p_message.get<ActorMap::ActorID>();
 
-		spk::SafePointer<Actor> actor = nullptr;
-		if (Context::instance()->actorMap.contains(actorId) == false)
-		{
-			actor = Context::instance()->actorMap.addActor(actorId, std::make_unique<Actor>());
-		}
-		else
-		{
-			actor = Context::instance()->actorMap.actor(actorId);
-		}
-
 		try
 		{
-			actor->deserialize(p_message);
+			Context::instance()->actorMap.requestActor(actorId)->deserialize(p_message);
 		}
 		catch (const std::exception& e)
 		{
@@ -74,6 +64,7 @@ void ActorListManager::_parseActorList(const spk::Message& p_message)
 	}
 
 	_requestActorList(missingActorIDs);
+	requestPaint();
 }
 
 ActorListManager::ActorListManager(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :

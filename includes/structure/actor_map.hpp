@@ -21,6 +21,7 @@ public:
 	bool contains(ActorID id) const;
 
 	spk::SafePointer<Actor> actor(ActorID id) const;
+	spk::SafePointer<Actor> requestActor(ActorID id);
 
 	void removeActor(ActorID id);
 

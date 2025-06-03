@@ -16,6 +16,15 @@ spk::SafePointer<Actor> ActorMap::actor(ActorID id) const
 	return _actors.at(id).get();
 }
 
+spk::SafePointer<Actor> ActorMap::requestActor(ActorID id)
+{
+	if (contains(id) == false)
+	{
+		addActor(id, std::make_unique<Actor>());
+	}
+	return (actor(id));
+}
+
 void ActorMap::removeActor(ActorID id)
 {
 	_actors.erase(id);
