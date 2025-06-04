@@ -2,9 +2,11 @@
 
 #include <sparkle.hpp>
 
+#include "widget/graphical_widget.hpp"
+
 #include "structure/actor_map.hpp"
 
-class ActorListManager : public spk::Widget
+class ActorListManager : public GraphicalWidget
 {
 private:
 	void _requestActorList(const std::vector<ActorMap::ActorID>& p_actorIDs);

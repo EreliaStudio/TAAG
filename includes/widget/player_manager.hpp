@@ -2,7 +2,9 @@
 
 #include <sparkle.hpp>
 
-class PlayerManager : public spk::Widget
+#include "widget/graphical_widget.hpp"
+
+class PlayerManager : public GraphicalWidget
 {
 private:
 	void _parsePlayerIDAssignation(const spk::Message& p_message);

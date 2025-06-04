@@ -8,6 +8,8 @@
 struct Node
 {
 	bool isObstacle = false;
+	bool isAutotiled = false;
+	size_t spriteID = 0;
 };
 
 class NodeMap
@@ -32,15 +34,28 @@ class Actor;
 
 class Chunk : public spk::IChunk<NodeMap::ID, 16, 16, 3>, public SerializableObject
 {
+public:
+	static void setSpriteSheet(spk::SafePointer<spk::SpriteSheet> p_spriteSheet);
+
 private:
+	spk::Vector2Int _position;
 	std::set<spk::SafePointer<Actor>> _bindedActors;
+	bool _isBaked = false;
+	spk::TextureRenderer _renderer;
 
 public:
 	Chunk();
 
+	void setPosition(const spk::Vector2Int& p_position);
+	const spk::Vector2Int& position();
+
 	void serialize(spk::Message& p_message) const override;
 	void deserialize(const spk::Message& p_message) override;
 	static void skip(const spk::Message& p_message);
+
+	bool isBaked() const;
+	void bake();
+	void render();
 
 	void bindActor(spk::SafePointer<Actor> p_actor);
 	void unbindActor(spk::SafePointer<Actor> p_actor);

@@ -35,7 +35,7 @@ void PlayerManager::_onPaintEvent(spk::PaintEvent& p_event)
 }
 
 PlayerManager::PlayerManager(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
-	spk::Widget(p_name, p_parent)
+	GraphicalWidget(p_name, p_parent)
 {
 	Context::instance()->client.subscribe(MessageType::PlayerIDAssignation, [this](const spk::Message& p_message) {
 		_parsePlayerIDAssignation(p_message);

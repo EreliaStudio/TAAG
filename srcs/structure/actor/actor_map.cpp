@@ -1,41 +1,41 @@
 #include "structure/actor_map.hpp"
 
-spk::SafePointer<Actor> ActorMap::addActor(ActorID id, std::unique_ptr<Actor> p_actor)
+spk::SafePointer<Actor> ActorMap::addActor(ActorID p_id, std::unique_ptr<Actor> p_actor)
 {
-	_actors[id] = std::move(p_actor);
-	return (actor(id));
+	_actors[p_id] = std::move(p_actor);
+	return (actor(p_id));
 }
 
-bool ActorMap::contains(ActorID id) const
+bool ActorMap::contains(ActorID p_id) const
 {
-	return _actors.find(id) != _actors.end();
+	return _actors.find(p_id) != _actors.end();
 }
 
-spk::SafePointer<Actor> ActorMap::actor(ActorID id) const
+spk::SafePointer<Actor> ActorMap::actor(ActorID p_id) const
 {
-	return _actors.at(id).get();
+	return _actors.at(p_id).get();
 }
 
-spk::SafePointer<Actor> ActorMap::requestActor(ActorID id)
+spk::SafePointer<Actor> ActorMap::requestActor(ActorID p_id)
 {
-	if (contains(id) == false)
+	if (contains(p_id) == false)
 	{
-		addActor(id, std::make_unique<Actor>());
+		addActor(p_id, std::make_unique<Actor>());
 	}
-	return (actor(id));
+	return (actor(p_id));
 }
 
-void ActorMap::removeActor(ActorID id)
+void ActorMap::removeActor(ActorID p_id)
 {
-	_actors.erase(id);
+	_actors.erase(p_id);
 }
 
 const std::unordered_map<ActorMap::ActorID, std::unique_ptr<Actor>>& ActorMap::actors() const
 {
-	return _actors;
+	return (_actors);
 }
 
 std::unordered_map<ActorMap::ActorID, std::unique_ptr<Actor>>& ActorMap::actors()
 {
-	return _actors;
+	return (_actors);
 }

@@ -16,14 +16,14 @@ private:
 	std::unordered_map<ActorID, std::unique_ptr<Actor>> _actors;
 
 public:
-	spk::SafePointer<Actor> addActor(ActorID id, std::unique_ptr<Actor> p_actor);
+	spk::SafePointer<Actor> addActor(ActorID p_id, std::unique_ptr<Actor> p_actor);
 
-	bool contains(ActorID id) const;
+	bool contains(ActorID p_id) const;
 
-	spk::SafePointer<Actor> actor(ActorID id) const;
-	spk::SafePointer<Actor> requestActor(ActorID id);
+	spk::SafePointer<Actor> actor(ActorID p_id) const;
+	spk::SafePointer<Actor> requestActor(ActorID p_id);
 
-	void removeActor(ActorID id);
+	void removeActor(ActorID p_id);
 
 	const std::unordered_map<ActorID, std::unique_ptr<Actor>>& actors() const;
 	std::unordered_map<ActorID, std::unique_ptr<Actor>>& actors();
