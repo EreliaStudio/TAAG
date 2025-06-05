@@ -11,6 +11,7 @@ struct Context : public spk::Singleton<Context>
 {
 	Client client;
 
+	NodeMap nodeMap;
 	ActorMap::ActorID playerID = -1;
 	ActorMap actorMap;
 	Tilemap tilemap;

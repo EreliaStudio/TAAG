@@ -16,7 +16,7 @@ MainWidget::MainWidget(const std::wstring& p_name, spk::SafePointer<spk::Widget>
 		_initialisationScreen.activate();
 	});
 
-	_initializationFinishedContract = EventDispatcher::subscribe(Event::ClientConnected, [&](){
+	_initializationFinishedContract = EventDispatcher::subscribe(Event::GameReady, [&](){
 		_gameScreen.activate();
 	});
 

@@ -1,15 +1,49 @@
 #pragma once
-#pragma once
 
 #include <sparkle.hpp>
 
 #include "network/serializable_object.hpp"
+#include "utils/bitmask.hpp"
+
+#include <unordered_map>
+#include <set>
+#include <cstdint>
 
 struct Node
 {
-	bool isObstacle = false;
-	bool isAutotiled = false;
-	size_t spriteID = 0;
+	enum class Type
+	{
+		Autotiled,
+		Monotiled
+	};
+
+    enum class Flag : std::uint16_t
+    {
+        None         = 0,
+        EastBlocked  = 1 << 0,
+        WestBlocked  = 1 << 1,
+        NorthBlocked = 1 << 2,
+        SouthBlocked = 1 << 3,
+        Obstacle     = EastBlocked | WestBlocked | NorthBlocked | SouthBlocked
+    };
+
+	using Flags = spk::Flags<Flag>;
+
+    Flags flags;
+    Type isAutotiled;
+    spk::Vector2Int sprite;
+	size_t animationFrames;
+	spk::Vector2Int animationOffset;
+
+	Node(Flags p_flags = Flag::None, Type p_isAutotiled = Type::Monotiled, spk::Vector2Int p_sprite = {0, 0}, size_t p_animationFrames = 1, spk::Vector2Int p_animationOffset = {1, 0}) :
+		flags(p_flags),
+		isAutotiled(p_isAutotiled),
+		sprite(p_sprite),
+		animationFrames(p_animationFrames),
+		animationOffset(p_animationOffset)
+	{
+
+	}
 };
 
 class NodeMap

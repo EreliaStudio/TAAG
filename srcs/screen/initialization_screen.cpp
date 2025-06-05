@@ -19,11 +19,13 @@ InitialisationScreen::InitialisationScreen(const std::wstring& name, spk::SafePo
 	_loadingText(name + L"/LoadingText", this),
 	_animationLabel(name + L"/AnimationLabel", this)
 {
-	_stateMachine.addStep(L"ClientConnection", std::make_unique<ClientConnectionStep>(_loadingText));
+	_stateMachine.addStep(ClientConnectionStep::Name, std::make_unique<ClientConnectionStep>(_loadingText));
+	_stateMachine.addStep(NodeMapInitializationStep::Name, std::make_unique<NodeMapInitializationStep>(_loadingText));
+	_stateMachine.addStep(InitializationClosureStep::Name, std::make_unique<InitializationClosureStep>(_loadingText));
 	_stateMachine.addStep(L"Idle", nullptr);
 
 	addActivationCallback([&](){
-		_stateMachine.setStep(L"ClientConnection");
+		_stateMachine.setStep(ClientConnectionStep::Name);
 	}).relinquish();
 
 	_loadingText.setTextAlignment(spk::HorizontalAlignment::Centered, spk::VerticalAlignment::Top);

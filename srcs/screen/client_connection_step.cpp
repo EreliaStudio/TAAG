@@ -84,6 +84,5 @@ void InitialisationScreen::ClientConnectionStep::onPending()
 spk::StateMachine::Step::ID InitialisationScreen::ClientConnectionStep::onFinish()
 {
 	_textArea.setText(L"Connection complete !");
-	EventDispatcher::emit(Event::ClientConnected);
-	return L"Idle";
+	return NodeMapInitializationStep::Name;
 }

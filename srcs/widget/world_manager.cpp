@@ -4,16 +4,20 @@
 
 void WorldManager::_onGeometryChange()
 {
-	spk::Vector2Int topLeftCorner = Tilemap::worldToChunk(spk::Vector3Int(convertScreenToWorldPosition({0, 0}), 0));
-	spk::Vector2Int downRightCorner = Tilemap::worldToChunk(spk::Vector3Int(convertScreenToWorldPosition(geometry().size), 0));
+	spk::Vector2 topLeftCell = convertScreenToWorldPosition({0, 0});
+	spk::Vector2 downRightCell = convertScreenToWorldPosition(geometry().size);
+	spk::Vector2Int topLeftCorner = Tilemap::worldToChunk(spk::Vector3Int(topLeftCell, 0));
+	spk::Vector2Int downRightCorner = Tilemap::worldToChunk(spk::Vector3Int(downRightCell, 0));
 	
-	std::vector<Tilemap::ChunkCoordinates> chunkToRequest;
+	std::vector<Tilemap::ChunkCoordinate> chunkToRequest;
 
-	for (int x = topLeftCorner.x; x <= downRightCorner; x++)
+	_activeChunks.clear();
+
+	for (int x = topLeftCorner.x; x <= downRightCorner.x; x++)
 	{
-		for (int y = topLeftCorner.y; y <= downRightCorner; y++)
+		for (int y = topLeftCorner.y; y <= downRightCorner.y; y++)
 		{
-			Tilemap::ChunkCoordinates tmp = {x, y};
+			Tilemap::ChunkCoordinate tmp = {x, y};
 
 			if (Context::instance()->tilemap.contains(tmp) == false)
 			{
@@ -25,8 +29,10 @@ void WorldManager::_onGeometryChange()
 
 				if (tmpChunk->isBaked() == false)
 				{
-					_chunkRenderer.bake();
+					tmpChunk->bake();
 				}
+
+				_activeChunks.push_back(tmpChunk);
 			}
 		}
 	}
@@ -39,14 +45,17 @@ void WorldManager::_onGeometryChange()
 
 void WorldManager::_onPaintEvent(spk::PaintEvent& p_event)
 {
-	_chunkRenderer.render();
+	for (auto& chunk : _activeChunks)
+	{
+		chunk->render();
+	}
 }
 
-void WorldManager::_requestChunks(const std::vector<Tilemap::ChunkCoordinate>& p_chunkCoordinates)
+void WorldManager::_requestChunks(const std::vector<Tilemap::ChunkCoordinate>& p_ChunkCoordinate)
 {
 	spk::Message message = spk::Message(static_cast<spk::Message::Header::Type>(MessageType::ChunkRequest));
 
-	for (const auto& coordinate : p_chunkCoordinates)
+	for (const auto& coordinate : p_ChunkCoordinate)
 	{
 		message << coordinate;
 	}

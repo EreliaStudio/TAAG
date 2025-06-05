@@ -2,6 +2,8 @@
 
 #include "structure/actor.hpp"
 
+#include "structure/context.hpp"
+
 Chunk::Chunk() : spk::IChunk<char, 16, 16, 3>()
 {
 

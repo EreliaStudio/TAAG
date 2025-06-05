@@ -17,6 +17,9 @@ private:
 
 	class ClientConnectionStep : public spk::StateMachine::Step
 	{
+	public:
+		static inline std::wstring Name = L"ClientConnectionStep";
+		
 	private:
 		struct ConnectionResult
 		{
@@ -43,6 +46,37 @@ private:
 		spk::StateMachine::Step::ID onFinish() override;
 	};
 
+	class NodeMapInitializationStep : public spk::StateMachine::Step
+	{
+	public:
+		static inline std::wstring Name = L"NodeMapInitializationStep";
+		
+	private:
+		TextArea& _textArea;
+
+	public:
+		NodeMapInitializationStep(TextArea& p_textArea);
+
+		void onStart() override;
+		void onPending() override;
+		spk::StateMachine::Step::ID onFinish() override;
+	};
+
+	class InitializationClosureStep : public spk::StateMachine::Step
+	{
+	public:
+		static inline std::wstring Name = L"InitializationClosureStep";
+		
+	private:
+		TextArea& _textArea;
+
+	public:
+		InitializationClosureStep(TextArea& p_textArea);
+
+		void onStart() override;
+		void onPending() override;
+		spk::StateMachine::Step::ID onFinish() override;
+	};
 
     void _onGeometryChange() override;
     void _onUpdateEvent(spk::UpdateEvent&) override;
