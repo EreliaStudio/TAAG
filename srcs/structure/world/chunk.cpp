@@ -218,8 +218,14 @@ spk::Vector2Int Chunk::_computeSpriteOffset(NodeMap::ID baseIndex, int corner, c
 
 void Chunk::_insertMonotile(const Node& node, const spk::Vector3Int& pos)
 {
-    _renderer.prepare(spk::Vector3(pos) + spk::Vector3(_position,0) * Size,
-                      {1.f,1.f}, node.sprite);
+    _renderer.prepare(
+			spk::Vector3(pos) + spk::Vector3(_position, 0) * Size,
+			{1.f,1.f},
+			node.sprite,
+			node.animationOffset,
+			node.frameDuration,
+			node.nbFrame
+		);
 }
 
 void Chunk::_insertAutotile(const Node& node, const spk::Vector3Int& pos, NodeMap::ID baseIndex)
@@ -231,7 +237,10 @@ void Chunk::_insertAutotile(const Node& node, const spk::Vector3Int& pos, NodeMa
         _renderer.prepare(
 				spk::Vector3(pos) + cornerPosition[corner] + spk::Vector3(_position, 0) * Size,
 				{0.5f,0.5f},
-				node.sprite + subOffset
+				node.sprite + subOffset,
+				node.animationOffset,
+				node.frameDuration,
+				node.nbFrame
 			);
     }
 }

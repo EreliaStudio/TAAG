@@ -6,7 +6,10 @@ void ChunkRenderer::_initProgram()
     {
         const char *vertexShaderSrc = R"(#version 450
             layout(location = 0) in vec3 inPosition;
-            layout(location = 1) in vec2 inUV;
+            layout(location = 1) in vec2 inBaseUV;
+			layout(location = 2) in vec2  inFrameUVOffset;
+			layout(location = 3) in float inFrameDuration;
+			layout(location = 4) in float inNbFrames;
             
             layout(std140, binding = 0) uniform CameraData
             {
@@ -14,13 +17,22 @@ void ChunkRenderer::_initProgram()
                 mat4 proj;
             } cameraData;
 
+			layout(std140, binding = 1) uniform TimeData
+			{
+				int epoch;
+			} timeData;
+
             layout(location = 0) out vec2 fragUV;
 
             void main()
             {
-                fragUV = inUV;
+				int frameIdx = int( timeData.epoch / inFrameDuration ) % int(inNbFrames);
 
-                gl_Position = cameraData.proj * cameraData.view * vec4(inPosition, 1.0);
+				float currentFrame = float(frameIdx);
+
+				fragUV = inBaseUV + inFrameUVOffset * currentFrame;
+
+				gl_Position = cameraData.proj * cameraData.view * vec4(inPosition, 1.0);
             }
             )";
 
@@ -53,11 +65,15 @@ void ChunkRenderer::_initBuffers()
     _bufferSet = spk::OpenGL::BufferSet({
         {0, spk::OpenGL::LayoutBufferObject::Attribute::Type::Vector3}, // position
         {1, spk::OpenGL::LayoutBufferObject::Attribute::Type::Vector2}, // uv
+        {2, spk::OpenGL::LayoutBufferObject::Attribute::Type::Vector2}, // frameOffset
+        {3, spk::OpenGL::LayoutBufferObject::Attribute::Type::Float}, // frameDuration
+        {4, spk::OpenGL::LayoutBufferObject::Attribute::Type::Float}, // nbFrame
     });
 }
 
 ChunkRenderer::ChunkRenderer() :
-	_cameraUBO(UniformBufferObjectAtlas::instance()->ubo(L"cameraData"))
+	_cameraUBO(UniformBufferObjectAtlas::instance()->ubo(L"cameraData")),
+	_timeUBO(UniformBufferObjectAtlas::instance()->ubo(L"timeData"))
 {
     _initProgram();
     _initBuffers();
@@ -82,7 +98,9 @@ void ChunkRenderer::clear()
     _bufferSet.indexes().clear();
 }
 
-void ChunkRenderer::prepare(const spk::Vector3& anchor, const spk::Vector2& size, const spk::Vector2Int& sprite)
+void ChunkRenderer::prepare(
+	const spk::Vector3& anchor, const spk::Vector2& size, const spk::Vector2Int& sprite,
+	const spk::Vector2Int& p_frameOffset, const float& p_frameDuration, const float& p_nbFrame)
 {
     if (_spriteSheet == nullptr)
 	{
@@ -98,16 +116,18 @@ void ChunkRenderer::prepare(const spk::Vector3& anchor, const spk::Vector2& size
 
     const auto &section = _spriteSheet->sprite(sprite);
 
+	const spk::Vector2 animationOffset = _spriteSheet->unit() * p_frameOffset;
+
     float u1 = section.anchor.x;
     float v1 = section.anchor.y + section.size.y;
     float u2 = section.anchor.x + section.size.x;
     float v2 = section.anchor.y;
 
     _bufferSet.layout()
-        << Vertex{bottomLeft,  {u1, v1}}
-        << Vertex{bottomRight, {u2, v1}}
-        << Vertex{topLeft,     {u1, v2}}
-        << Vertex{topRight,    {u2, v2}};
+        << Vertex{bottomLeft,  {u1, v1}, animationOffset, static_cast<float>(p_frameDuration), static_cast<float>(p_nbFrame)}
+        << Vertex{bottomRight, {u2, v1}, animationOffset, static_cast<float>(p_frameDuration), static_cast<float>(p_nbFrame)}
+        << Vertex{topLeft,     {u1, v2}, animationOffset, static_cast<float>(p_frameDuration), static_cast<float>(p_nbFrame)}
+        << Vertex{topRight,    {u2, v2}, animationOffset, static_cast<float>(p_frameDuration), static_cast<float>(p_nbFrame)};
 
     static constexpr std::array<unsigned int, 6> kIndices = {0, 1, 2, 2, 1, 3};
     for (unsigned int idx : kIndices)
@@ -133,9 +153,11 @@ void ChunkRenderer::render()
     _bufferSet.activate();
     _samplerObject->activate();
 	_cameraUBO.activate();
+	_timeUBO.activate();
 
     _program->render(_bufferSet.indexes().nbIndexes(), 1);
 
+	_timeUBO.deactivate();
 	_cameraUBO.deactivate();
     _samplerObject->deactivate();
     _bufferSet.deactivate();

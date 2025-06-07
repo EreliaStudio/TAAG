@@ -19,6 +19,20 @@
 					"NestedElements": []
 				}
 			]
+		},
+		{
+			"Name":"timeData",
+			"BlockName":"TimeData",
+			"BindingPoint": 1,
+			"Size":4,
+			"Elements":[
+				{
+					"Name": "epoch",
+					"Offset": 0,
+					"Size": 4,
+					"NestedElements": []
+				}
+			]
 		}
 	]
 }

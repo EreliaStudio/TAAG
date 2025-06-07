@@ -1,6 +1,6 @@
 #include "structure/world.hpp"
 
-void NodeMap::addNode(const ID& p_id, Node p_node)
+void NodeMap::addNode(const ID& p_id, const Node& p_node)
 {
 	_nodes[p_id] = p_node;
 }

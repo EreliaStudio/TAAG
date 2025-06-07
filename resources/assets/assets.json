@@ -36,7 +36,7 @@
 			"Name":"ChunkSpriteSheet",
 			"Path":"resources/assets/textures/chunkSpriteSheet.png",
 			"Size":{
-				"x":8,
+				"x":20,
 				"y":6
 			}
 		}

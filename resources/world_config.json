@@ -3,20 +3,35 @@
 		{
 			"ID":0,
 			"Flag": ["Obstacle"],
-			"Type": "Autotiled",
+			"Type": "Monotiled",
 			"Sprite": {
 				"x":0,
 				"y":0
 			},
 			"AnimationOffset": {
-				"x":0,
+				"x":1,
 				"y":0
 			},
-			"FrameDuration":100,
-			"NbFrame":1
+			"FrameDuration":250,
+			"NbFrame":4
 		},
 		{
 			"ID":1,
+			"Flag": ["Obstacle"],
+			"Type": "Monotiled",
+			"Sprite": {
+				"x":0,
+				"y":1
+			},
+			"AnimationOffset": {
+				"x":1,
+				"y":0
+			},
+			"FrameDuration":500,
+			"NbFrame":4
+		},
+		{
+			"ID":2,
 			"Flag": ["Obstacle"],
 			"Type": "Autotiled",
 			"Sprite": {
@@ -24,11 +39,11 @@
 				"y":0
 			},
 			"AnimationOffset": {
-				"x":0,
+				"x":4,
 				"y":0
 			},
-			"FrameDuration":100,
-			"NbFrame":1
+			"FrameDuration":250,
+			"NbFrame":4
 		}
 	]
 }

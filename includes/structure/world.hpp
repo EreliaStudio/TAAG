@@ -63,7 +63,7 @@ private:
 public:
 	NodeMap() = default;
 
-	void addNode(const ID& p_id, Node p_node);
+	void addNode(const ID& p_id, const Node& p_node);
 
 	bool contains(const ID& p_id) const;
 
