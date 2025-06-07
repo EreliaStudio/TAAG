@@ -20,7 +20,7 @@ InitialisationScreen::InitialisationScreen(const std::wstring& name, spk::SafePo
 	_animationLabel(name + L"/AnimationLabel", this)
 {
 	_stateMachine.addStep(ClientConnectionStep::Name, std::make_unique<ClientConnectionStep>(_loadingText));
-	_stateMachine.addStep(NodeMapInitializationStep::Name, std::make_unique<NodeMapInitializationStep>(_loadingText));
+	_stateMachine.addStep(GameInitializationStep::Name, std::make_unique<GameInitializationStep>(_loadingText));
 	_stateMachine.addStep(InitializationClosureStep::Name, std::make_unique<InitializationClosureStep>(_loadingText));
 	_stateMachine.addStep(L"Idle", nullptr);
 

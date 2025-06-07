@@ -2,10 +2,17 @@
 
 #include <sparkle.hpp>
 
+#include "structure/context.hpp"
+
 class GraphicalWidget : public spk::Widget
 {
 private:
-	static inline spk::Vector2Int _nodeSize = {16, 16};
+	Context::Instanciator _contextInstanciator;
+
+	static inline spk::Vector2Int _nodeSize = {32, 32};
+	static inline spk::ContractProvider _onNodeSizeEditionContractProvider;
+
+	spk::ContractProvider::Contract _onNodeSizeEditionContract;
 
 protected:
 	spk::Vector2 convertScreenToWorldPosition(const spk::Vector2Int& p_screenPosition);
@@ -16,4 +23,5 @@ public:
 	GraphicalWidget(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent);
 
 	static void setNodeSize(const spk::Vector2Int& p_nodeSize);
+	const spk::Vector2Int& nodeSize() const;
 };

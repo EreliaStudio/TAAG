@@ -1,7 +1,5 @@
 #include "utils/widget_addons.hpp"
 
-#include "structure/asset_atlas.hpp"
-
 void WidgetAddons::ApplyFormat(spk::SafePointer<spk::Frame> p_widget)
 {
 	p_widget->setNineSlice(AssetAtlas::instance()->spriteSheet(L"defaultNineSlice"));

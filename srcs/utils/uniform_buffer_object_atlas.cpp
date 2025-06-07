@@ -1,0 +1,152 @@
+#include "utils/uniform_buffer_object_atlas.hpp"
+
+UniformBufferObjectAtlas::UniformBufferObjectAtlas()
+{
+	spk::JSON::File atlasFileConfiguration = spk::JSON::File("resources/uniform_buffer_object_config.json");
+	
+	load(atlasFileConfiguration);
+}
+
+void UniformBufferObjectAtlas::load(const spk::JSON::File &p_json)
+{
+	_ubos.clear();
+
+	if (!p_json.contains(L"UniformBufferObject"))
+	{
+		GENERATE_ERROR("[UniformBufferObjectAtlas] - Missing 'UniformBufferObject' array in JSON description.");
+	}
+
+	const auto &ubosArray = p_json[L"UniformBufferObject"].asArray();
+
+	for (const auto *uboObjPtr : ubosArray)
+	{
+		const spk::JSON::Object &uboObj = *uboObjPtr;
+		std::wstring name = uboObj[L"Name"].as<std::wstring>();
+		std::wstring blockName = uboObj[L"BlockName"].as<std::wstring>();
+		int binding = static_cast<int>(uboObj[L"BindingPoint"].as<long>());
+		size_t size = static_cast<size_t>(uboObj[L"Size"].as<long>());
+
+		spk::OpenGL::UniformBufferObject newUbo(blockName, binding, size);
+
+		if (uboObj.contains(L"Elements"))
+		{
+			const auto &elements = uboObj[L"Elements"].asArray();
+			for (const auto *elementPtr : elements)
+			{
+				_loadElement(newUbo, *elementPtr);
+			}
+		}
+
+		_ubos.emplace(name, std::move(newUbo));
+	}
+}
+
+void UniformBufferObjectAtlas::_loadElement(spk::OpenGL::UniformBufferObject &p_ubo, const spk::JSON::Object &p_elementDesc)
+{
+	std::wstring name = p_elementDesc[L"Name"].as<std::wstring>();
+	size_t offset = static_cast<size_t>(p_elementDesc[L"Offset"].as<long>());
+
+	if (p_elementDesc.contains(L"Size"))
+	{
+		size_t size = static_cast<size_t>(p_elementDesc[L"Size"].as<long>());
+		auto &newElement = p_ubo.addElement(name, offset, size);
+
+		if (p_elementDesc.contains(L"NestedElements"))
+		{
+			const auto &nestedArray = p_elementDesc[L"NestedElements"].asArray();
+			for (const auto *child : nestedArray)
+			{
+				_loadElement(newElement, *child);
+			}
+		}
+	}
+	else if (p_elementDesc.contains(L"NbElements"))
+	{
+		size_t nbElement = static_cast<size_t>(p_elementDesc[L"NbElements"].as<long>());
+		size_t elementSize = static_cast<size_t>(p_elementDesc[L"ElementSize"].as<long>());
+		size_t padding = static_cast<size_t>(p_elementDesc[L"ElementPadding"].as<long>());
+
+		auto &arrayElement = p_ubo.addElement(name, offset, nbElement, elementSize, padding);
+
+		if (p_elementDesc.contains(L"ElementComposition"))
+		{
+			const auto &composition = p_elementDesc[L"ElementComposition"].asArray();
+			for (size_t i = 0; i < arrayElement.nbElement(); ++i)
+			{
+				for (const auto *comp : composition)
+				{
+					_loadElement(arrayElement[i], *comp);
+				}
+			}
+		}
+	}
+	else
+	{
+		GENERATE_ERROR("[UniformBufferObjectAtlas] - Element description must contain either 'Size' or 'NbElements'.");
+	}
+}
+
+void UniformBufferObjectAtlas::_loadElement(spk::DataBufferLayout::Element &p_parent, const spk::JSON::Object &p_elementDesc)
+{
+	std::wstring name = p_elementDesc[L"Name"].as<std::wstring>();
+	size_t offset = p_parent.offset() + static_cast<size_t>(p_elementDesc[L"Offset"].as<long>());
+
+	if (p_elementDesc.contains(L"Size"))
+	{
+		size_t size = static_cast<size_t>(p_elementDesc[L"Size"].as<long>());
+		auto &newElement = p_parent.addElement(name, offset, size);
+
+		if (p_elementDesc.contains(L"NestedElements"))
+		{
+			const auto &nestedArray = p_elementDesc[L"NestedElements"].asArray();
+			for (const auto *child : nestedArray)
+			{
+				_loadElement(newElement, *child);
+			}
+		}
+	}
+	else if (p_elementDesc.contains(L"NbElements"))
+	{
+		size_t nbElement = static_cast<size_t>(p_elementDesc[L"NbElements"].as<long>());
+		size_t elementSize = static_cast<size_t>(p_elementDesc[L"ElementSize"].as<long>());
+		size_t padding = static_cast<size_t>(p_elementDesc[L"ElementPadding"].as<long>());
+
+		auto &arrayElement = p_parent.addElement(name, offset, nbElement, elementSize, padding);
+
+		if (p_elementDesc.contains(L"ElementComposition"))
+		{
+			const auto &composition = p_elementDesc[L"ElementComposition"].asArray();
+			for (size_t i = 0; i < arrayElement.nbElement(); ++i)
+			{
+				for (const auto *comp : composition)
+				{
+					_loadElement(arrayElement[i], *comp);
+				}
+			}
+		}
+	}
+	else
+	{
+		GENERATE_ERROR("[UniformBufferObjectAtlas] - Element description must contain either 'Size' or 'NbElements'.");
+	}
+}
+
+bool UniformBufferObjectAtlas::contains(const std::wstring &p_name) const
+{
+	return _ubos.contains(p_name);
+}
+
+spk::OpenGL::UniformBufferObject& UniformBufferObjectAtlas::ubo(const std::wstring &p_name)
+{
+	if (!_ubos.contains(p_name))
+	{
+		GENERATE_ERROR("[UniformBufferObjectAtlas] - UniformBufferObject '" + spk::StringUtils::wstringToString(p_name) + "' not found.");
+	}
+
+	return (_ubos.at(p_name));
+}
+
+const std::unordered_map<std::wstring, spk::OpenGL::UniformBufferObject> &UniformBufferObjectAtlas::ubos() const
+{
+	return _ubos;
+}

@@ -63,6 +63,33 @@ void WorldManager::_requestChunks(const std::vector<Tilemap::ChunkCoordinate>& p
 	Context::instance()->client.send(message);
 }
 
+void WorldManager::_unbakeNeighbourChunks(const Tilemap::ChunkCoordinate& center)
+{
+	Tilemap& tilemap = Context::instance()->tilemap;
+
+	for (int dx = -1; dx <= 1; ++dx)
+	{
+		for (int dy = -1; dy <= 1; ++dy)
+		{
+			if (dx == 0 && dy == 0)
+			{
+				continue;
+			}
+
+			Tilemap::ChunkCoordinate neighbour{center.x + dx, center.y + dy};
+
+			if (tilemap.contains(neighbour))
+			{
+				auto chunk = tilemap.chunk(neighbour);
+				if (chunk && chunk->isBaked() == true)
+				{
+					chunk->unbake();
+				}
+			}
+		}
+	}
+}
+
 void WorldManager::_receiveChunk(const spk::Message& p_message)
 {
 	while (p_message.empty() == false)
@@ -86,6 +113,8 @@ void WorldManager::_receiveChunk(const spk::Message& p_message)
 		{
 			PROPAGATE_ERROR("Error while deserializing chunk", e);
 		}
+		
+		_unbakeNeighbourChunks(coordinate);
 	}
 	requireGeometryUpdate();
 }

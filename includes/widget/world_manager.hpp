@@ -14,6 +14,8 @@ private:
 	void _onPaintEvent(spk::PaintEvent& p_event) override;
 
 	void _requestChunks(const std::vector<Tilemap::ChunkCoordinate>& p_chunkCoordinates);
+	
+	void _unbakeNeighbourChunks(const Tilemap::ChunkCoordinate& center);
 	void _receiveChunk(const spk::Message& p_message);
 
 public:

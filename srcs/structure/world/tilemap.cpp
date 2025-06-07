@@ -3,5 +3,5 @@
 Tilemap::Tilemap() :
 	spk::ITilemap<Chunk>()
 {
-	requestChunk({0, 0});
+	
 }

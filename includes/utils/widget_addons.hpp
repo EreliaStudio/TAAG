@@ -2,7 +2,7 @@
 
 #include <sparkle.hpp>
 
-#include "structure/asset_atlas.hpp"
+#include "utils/asset_atlas.hpp"
 
 class WidgetAddons
 {

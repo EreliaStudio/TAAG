@@ -3,11 +3,12 @@
 #include <sparkle.hpp>
 
 #include "network/serializable_object.hpp"
-#include "utils/bitmask.hpp"
 
 #include <unordered_map>
 #include <set>
 #include <cstdint>
+
+#include "renderer/chunk_renderer.hpp"
 
 struct Node
 {
@@ -32,19 +33,24 @@ struct Node
     Flags flags;
     Type isAutotiled;
     spk::Vector2Int sprite;
-	size_t animationFrames;
 	spk::Vector2Int animationOffset;
+	float frameDuration;
+	float nbFrame;
 
-	Node(Flags p_flags = Flag::None, Type p_isAutotiled = Type::Monotiled, spk::Vector2Int p_sprite = {0, 0}, size_t p_animationFrames = 1, spk::Vector2Int p_animationOffset = {1, 0}) :
+	Node(Flags p_flags = Flag::None, Type p_isAutotiled = Type::Monotiled, spk::Vector2Int p_sprite = {0, 0}, spk::Vector2Int p_animationOffset = {0, 0}, float p_frameDuration = 0, float p_nbFrame = 1) :
 		flags(p_flags),
 		isAutotiled(p_isAutotiled),
 		sprite(p_sprite),
-		animationFrames(p_animationFrames),
-		animationOffset(p_animationOffset)
+		animationOffset(p_animationOffset),
+		frameDuration(p_frameDuration),
+		nbFrame(p_nbFrame)
 	{
 
 	}
 };
+
+Node::Type toNodeType(const std::wstring& p_string);
+Node::Flag toNodeFlag(const std::wstring& p_string);
 
 class NodeMap
 {
@@ -68,14 +74,25 @@ class Actor;
 
 class Chunk : public spk::IChunk<NodeMap::ID, 16, 16, 3>, public SerializableObject
 {
-public:
-	static void setSpriteSheet(spk::SafePointer<spk::SpriteSheet> p_spriteSheet);
-
 private:
 	spk::Vector2Int _position;
 	std::set<spk::SafePointer<Actor>> _bindedActors;
 	bool _isBaked = false;
-	spk::TextureRenderer _renderer;
+	ChunkRenderer _renderer;
+    spk::SafePointer<Chunk> _neighbours[3][3] = {
+			{nullptr,nullptr,nullptr},
+        	{nullptr,nullptr,nullptr},
+        	{nullptr,nullptr,nullptr}
+		};
+
+	void _insertAutotile (const Node& p_node, const spk::Vector3Int& p_nodePosition, NodeMap::ID baseIndex);
+    void _insertMonotile(const Node& p_node, const spk::Vector3Int& p_nodePosition);
+
+    void _computeNeighbours();
+	spk::SafePointer<Chunk> _getNeighbourChunk(const spk::Vector2Int& p_offset) const;
+	spk::Vector2Int _getNeighbourOffset(const spk::Vector3Int& p_position) const;
+
+    spk::Vector2Int _computeSpriteOffset(NodeMap::ID baseIndex, int quadrant, const spk::Vector3Int& relPos) const;
 
 public:
 	Chunk();
@@ -88,6 +105,7 @@ public:
 	static void skip(const spk::Message& p_message);
 
 	bool isBaked() const;
+	void unbake();
 	void bake();
 	void render();
 

@@ -46,16 +46,16 @@ private:
 		spk::StateMachine::Step::ID onFinish() override;
 	};
 
-	class NodeMapInitializationStep : public spk::StateMachine::Step
+	class GameInitializationStep : public spk::StateMachine::Step
 	{
 	public:
-		static inline std::wstring Name = L"NodeMapInitializationStep";
+		static inline std::wstring Name = L"GameInitializationStep";
 		
 	private:
 		TextArea& _textArea;
 
 	public:
-		NodeMapInitializationStep(TextArea& p_textArea);
+		GameInitializationStep(TextArea& p_textArea);
 
 		void onStart() override;
 		void onPending() override;

@@ -8,20 +8,27 @@
 
 class Actor : public SerializableObject
 {
+public:
+	using Contract = spk::ContractProvider::Contract;
+	using Job = spk::ContractProvider::Job;
+
 private:
 	spk::Vector2 _position = spk::Vector2(0, 0);
 	float _rotation = 0.0f;
 	spk::Vector2 _scale = spk::Vector2(1, 1);
 
 	spk::SafePointer<Chunk> _bindedChunk;
+	spk::ContractProvider _onEditionContractProvider;
 
 public:
 	void setPosition(const spk::Vector2& p_position);
-	spk::Vector2 position() const;
+	const spk::Vector2& position() const;
 	void setRotation(float p_rotation);
-	float rotation() const;
+	const float& rotation() const;
 	void setScale(const spk::Vector2& p_scale);
-	spk::Vector2 scale() const;
+	const spk::Vector2& scale() const;
+
+	Contract subscribeToEdition(const Job& p_job);
 
 	void serialize(spk::Message& p_message) const override;
 	void deserialize(const spk::Message& p_message) override;

@@ -5,7 +5,7 @@ void Actor::setPosition(const spk::Vector2& p_position)
 	_position = p_position;
 }
 
-spk::Vector2 Actor::position() const
+const spk::Vector2& Actor::position() const
 {
 	return _position;
 }
@@ -15,7 +15,7 @@ void Actor::setRotation(float p_rotation)
 	_rotation = p_rotation;
 }
 
-float Actor::rotation() const
+const float& Actor::rotation() const
 {
 	return _rotation;
 }
@@ -25,9 +25,14 @@ void Actor::setScale(const spk::Vector2& p_scale)
 	_scale = p_scale;
 }
 
-spk::Vector2 Actor::scale() const
+const spk::Vector2& Actor::scale() const
 {
 	return _scale;
+}
+
+spk::ContractProvider::Contract Actor::subscribeToEdition(const spk::ContractProvider::Job& p_job)
+{
+	return (_onEditionContractProvider.subscribe(p_job));
 }
 
 void Actor::serialize(spk::Message& p_message) const
@@ -39,9 +44,20 @@ void Actor::serialize(spk::Message& p_message) const
 
 void Actor::deserialize(const spk::Message& p_message)
 {
+	spk::Vector2 oldPosition = _position;
+	float oldRotation = _rotation;
+	spk::Vector2 oldScale = _scale;
+
 	p_message >> _position;
 	p_message >> _rotation;
 	p_message >> _scale;
+
+	if (oldPosition != _position || 
+		oldRotation != _rotation ||
+		oldScale != _scale)
+	{
+		_onEditionContractProvider.trigger();
+	}
 }
 
 void Actor::skip(const spk::Message& p_message)

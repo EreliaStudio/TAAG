@@ -1,0 +1,24 @@
+{
+	"UniformBufferObject": [
+		{
+			"Name": "cameraData",
+			"BlockName": "CameraData",
+			"BindingPoint": 0,
+			"Size": 128,
+			"Elements": [
+				{
+					"Name": "view",
+					"Offset": 0,
+					"Size": 64,
+					"NestedElements": []
+				},
+				{
+					"Name": "proj",
+					"Offset": 64,
+					"Size": 64,
+					"NestedElements": []
+				}
+			]
+		}
+	]
+}

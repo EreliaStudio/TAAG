@@ -84,5 +84,5 @@ void InitialisationScreen::ClientConnectionStep::onPending()
 spk::StateMachine::Step::ID InitialisationScreen::ClientConnectionStep::onFinish()
 {
 	_textArea.setText(L"Connection complete !");
-	return NodeMapInitializationStep::Name;
+	return GameInitializationStep::Name;
 }

@@ -14,5 +14,6 @@ struct Context : public spk::Singleton<Context>
 	NodeMap nodeMap;
 	ActorMap::ActorID playerID = -1;
 	ActorMap actorMap;
+	spk::SafePointer<Actor> player;
 	Tilemap tilemap;
 };
