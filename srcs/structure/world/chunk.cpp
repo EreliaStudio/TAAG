@@ -148,7 +148,7 @@ void Chunk::deserialize(const spk::Message& p_message)
 
 void Chunk::skip(const spk::Message& p_message)
 {
-	p_message.skip<NodeMap::ID[16][16][3]>();
+	p_message.skip(contentByteSize());
 }
 
 bool Chunk::isBaked() const

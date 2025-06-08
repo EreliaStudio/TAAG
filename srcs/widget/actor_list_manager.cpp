@@ -64,12 +64,57 @@ void ActorListManager::_parseActorList(const spk::Message& p_message)
 	}
 
 	_requestActorList(missingActorIDs);
+	requireGeometryUpdate();
 	requestPaint();
+}
+
+void ActorListManager::_onGeometryChange()
+{
+	for (auto& [shapeID, renderer] : _shapeRenderers)
+	{
+		renderer->clear();
+	}
+
+	for (const auto& [actorID, actor] : Context::instance()->actorMap.actors())
+	{
+		_shapeRenderers[actor->shape()]->addActor(actor.get());
+	}
+
+	for (auto& [shapeID, renderer] : _shapeRenderers)
+	{
+		renderer->validate();
+	}
+}
+
+void ActorListManager::_onPaintEvent(spk::PaintEvent& p_event)
+{
+	for (auto& [shapeID, renderer] : _shapeRenderers)
+	{
+		renderer->render();
+	}
 }
 
 ActorListManager::ActorListManager(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
 	GraphicalWidget(p_name, p_parent)
 {
+	std::vector<Actor::Shape> shapes = {
+		Actor::Shape::Triangle,
+		Actor::Shape::Square,
+		Actor::Shape::Pentagon,
+		Actor::Shape::Hexagon,
+		Actor::Shape::Octogon,
+		Actor::Shape::Circle
+	};
+
+	for (const auto& shape : shapes)
+	{
+		std::unique_ptr<ShapeRenderer> newRenderer = std::make_unique<ShapeRenderer>();
+
+		newRenderer->setShape(shape);
+
+		_shapeRenderers[shape] = std::move(newRenderer);
+	}
+
 	Context::instance()->client.subscribe(MessageType::ActorList, [this](const spk::Message& p_message) {
 		_parseActorList(p_message);
 	}).relinquish();

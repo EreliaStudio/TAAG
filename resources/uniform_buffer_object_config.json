@@ -34,5 +34,26 @@
 				}
 			]
 		}
-	]
+	],
+	"ShaderStorageBufferObject": [
+        {
+            "Name": "actorList",
+            "BlockName": "ActorList",
+            "BindingPoint": 1,
+
+            "FixedSize":               0,
+            "PaddingFixedToDynamic":   0,
+            "DynamicElementSize":     48,
+            "DynamicElementPadding":   0,
+
+            "FixedElements": [],
+
+            "DynamicElementComposition": [
+                { "Name": "position", "Offset":  0, "Size":  8, "NestedElements": [] },
+                { "Name": "rotation", "Offset":  8, "Size":  4, "NestedElements": [] },
+                { "Name": "scale",    "Offset": 16, "Size":  8, "NestedElements": [] },
+                { "Name": "color",    "Offset": 32, "Size": 16, "NestedElements": [] }
+            ]
+        }
+    ]
 }
