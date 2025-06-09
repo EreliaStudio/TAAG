@@ -6,8 +6,8 @@ void WorldManager::_onGeometryChange()
 {
 	spk::Vector2 topLeftCell = convertScreenToWorldPosition({0, 0});
 	spk::Vector2 downRightCell = convertScreenToWorldPosition(geometry().size);
-	spk::Vector2Int topLeftCorner = Tilemap::worldToChunk(spk::Vector3Int(topLeftCell, 0));
-	spk::Vector2Int downRightCorner = Tilemap::worldToChunk(spk::Vector3Int(downRightCell, 0));
+	spk::Vector2Int topLeftCorner = Tilemap::worldToChunk(spk::Vector3Int(topLeftCell, 0)) - 1;
+	spk::Vector2Int downRightCorner = Tilemap::worldToChunk(spk::Vector3Int(downRightCell, 0)) + 1;
 	
 	std::vector<Tilemap::ChunkCoordinate> chunkToRequest;
 
@@ -124,5 +124,9 @@ WorldManager::WorldManager(const std::wstring& p_name, spk::SafePointer<spk::Wid
 {
 	Context::instance()->client.subscribe(MessageType::ChunkData, [this](const spk::Message& p_message) {
 		_receiveChunk(p_message);
+	}).relinquish();
+
+	EventDispatcher::subscribe(Event::PlayerMotion, [&](){
+		requireGeometryUpdate();
 	}).relinquish();
 }

@@ -65,7 +65,17 @@ void ActorListManager::_parseActorList(const spk::Message& p_message)
 
 	_requestActorList(missingActorIDs);
 	requireGeometryUpdate();
-	requestPaint();
+	EventDispatcher::emit(Event::PlayerMotion);
+}
+
+void ActorListManager::_parseActorRemoval(const spk::Message& p_message)
+{
+	while (p_message.empty() == false)
+	{
+		auto actorId = p_message.get<ActorMap::ActorID>();
+
+		Context::instance()->actorMap.removeActor(actorId);
+	}
 }
 
 void ActorListManager::_onGeometryChange()
@@ -92,6 +102,11 @@ void ActorListManager::_onPaintEvent(spk::PaintEvent& p_event)
 	{
 		renderer->render();
 	}
+}
+
+void ActorListManager::_onUpdateEvent(spk::UpdateEvent& p_event)
+{
+	
 }
 
 ActorListManager::ActorListManager(const std::wstring& p_name, spk::SafePointer<spk::Widget> p_parent) :
@@ -121,5 +136,9 @@ ActorListManager::ActorListManager(const std::wstring& p_name, spk::SafePointer<
 
 	Context::instance()->client.subscribe(MessageType::ActorData, [this](const spk::Message& p_message) {
 		_parseActorData(p_message);
+	}).relinquish();
+
+	Context::instance()->client.subscribe(MessageType::ActorRemoval, [this](const spk::Message& p_message) {
+		_parseActorRemoval(p_message);
 	}).relinquish();
 }

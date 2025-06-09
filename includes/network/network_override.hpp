@@ -11,7 +11,10 @@ enum class MessageType
 	ActorRequest = 2,
 	ActorData = 3,
 	ActorList = 4,
-	PlayerIDAssignation = 5
+	PlayerIDAssignation = 5,
+	PlayerMotionRequest = 6,
+	ActorRemoval = 7,
+	PlayerRotationRequest = 8
 };
 
 std::string toString(MessageType p_type);

@@ -5,7 +5,8 @@
 enum class Event
 {
 	LaunchClientConnection,
-	GameReady
+	GameReady,
+	PlayerMotion
 };
 
 using EventDispatcher = spk::EventDispatcher<Event>;
