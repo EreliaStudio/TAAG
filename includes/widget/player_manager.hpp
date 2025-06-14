@@ -4,9 +4,19 @@
 
 #include "widget/graphical_widget.hpp"
 
+#include "structure/action.hpp"
+
 class PlayerManager : public GraphicalWidget
 {
 private:
+	enum class ActionType
+	{
+		MotionUp,
+		MotionDown,
+		MotionLeft,
+		MotionRight,
+		Rotation
+	};
 	UniformBufferObjectAtlas::Instanciator _uniformBufferObjectAtlasInstanciator;
 
 	spk::Vector2Int _screenRenderDimension;
@@ -14,10 +24,10 @@ private:
 	Actor::Contract _onPlayerEditionContract;
 
 	spk::Camera _camera;
+	
+	spk::Vector2 _playerMotionDirection;
 
-	spk::Timer _motionRequestTimer = spk::Timer(spk::Duration(16, spk::TimeUnit::Millisecond));
-	spk::Vector2 _controllerDirection;
-	bool _motionRequests[4];
+	std::unordered_map<ActionType, std::unique_ptr<Action>> _actions;
 
 	void _updatePlayerUBOs();
 	void _parsePlayerIDAssignation(const spk::Message& p_message);
@@ -27,10 +37,6 @@ private:
 
 	void _onGeometryChange() override;
 	void _onPaintEvent(spk::PaintEvent& p_event) override;
-
-	void _onKeyboardEvent(spk::KeyboardEvent& p_event) override;
-	void _onMouseEvent(spk::MouseEvent& p_event) override;
-	void _onControllerEvent(spk::ControllerEvent& p_event) override;
 
 	void _onUpdateEvent(spk::UpdateEvent& p_event) override;
 
