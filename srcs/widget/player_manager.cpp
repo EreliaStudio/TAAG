@@ -122,20 +122,26 @@ PlayerManager::PlayerManager(const std::wstring& p_name, spk::SafePointer<spk::W
 			});
 
 	_actions[ActionType::Rotation] = std::make_unique<MouseMotionAction>(
-		MouseMotionAction::Mode::Absolute,
-		[&](const spk::Vector2Int& pos){
-			const auto center = geometry().size / 2 + geometry().anchor;
-			
-			spk::Vector2Int delta = pos - center;
-			
-			float angle = std::atan2(-float(delta.y), float(delta.x));
+				MouseMotionAction::Mode::Absolute,
+				[&](const spk::Vector2Int& pos){
+					const auto center = geometry().size / 2 + geometry().anchor;
+					
+					spk::Vector2Int delta = pos - center;
+					
+					float angle = std::atan2(-float(delta.y), float(delta.x));
 
-			if (angle < 0)
-			{
-				angle += 2 * float(M_PI);
-			}
+					if (angle < 0)
+					{
+						angle += 2 * float(M_PI);
+					}
 
-			_requestPlayerRotation(angle);
-		}
-	);
+					_requestPlayerRotation(angle);
+				}
+			);
+
+	_actions[ActionType::ActionSlotA] = std::make_unique<MouseButtonAction>(spk::Mouse::Button::Left, spk::InputState::Down, 16, [&](spk::SafePointer<const spk::Mouse> p_mouse){
+				const auto center = geometry().size / 2 + geometry().anchor;
+					
+				spk::Vector2 delta = static_cast<spk::Vector2>(p_mouse->position - center).n;
+			});
 }

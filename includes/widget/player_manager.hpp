@@ -4,7 +4,7 @@
 
 #include "widget/graphical_widget.hpp"
 
-#include "structure/action.hpp"
+#include "utils/user_action.hpp"
 
 class PlayerManager : public GraphicalWidget
 {
@@ -15,7 +15,9 @@ private:
 		MotionDown,
 		MotionLeft,
 		MotionRight,
-		Rotation
+		Rotation,
+		ActionSlotA,
+		ActionSlotB
 	};
 	UniformBufferObjectAtlas::Instanciator _uniformBufferObjectAtlasInstanciator;
 
